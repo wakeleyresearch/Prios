@@ -67,14 +67,13 @@ class ProductivityIntegration {
     async calculateWeeklyProductivity() {
         if (!this.db) await this._dbReady;
         const weeks = [];
-        const today = new Date();
-        
+
         // Get last 4 weeks of data
         for (let weekOffset = -3; weekOffset <= 0; weekOffset++) {
             const weekData = await this.getWeekData(weekOffset);
             weeks.push(weekData);
         }
-        
+
         return this.formatForParallelCoords(weeks);
     }
     
@@ -82,29 +81,49 @@ class ProductivityIntegration {
         if (!this.db) await this._dbReady;
         const today = new Date();
         const startOfWeek = new Date(today);
+        startOfWeek.setHours(0, 0, 0, 0);
         startOfWeek.setDate(today.getDate() - today.getDay() + (weekOffset * 7));
-        
+
         const endOfWeek = new Date(startOfWeek);
         endOfWeek.setDate(startOfWeek.getDate() + 6);
-        
-        const tasks = await this.getTasksInRange(
-            startOfWeek.toISOString().split('T')[0],
-            endOfWeek.toISOString().split('T')[0]
-        );
-        
+
+        const startKey = startOfWeek.toISOString().split('T')[0];
+        const endKey = endOfWeek.toISOString().split('T')[0];
+
+        const tasks = await this.getTasksInRange(startKey, endKey);
+
+        const enrichedTasks = tasks.map(task => {
+            const base = window.PriosScoring?.sanitizeTask ? window.PriosScoring.sanitizeTask(task) : { ...task };
+            base.id = task.id;
+            base.date = task.date;
+            const metrics = this.calculateTaskScores(base);
+            const composite = this.calculateCompositeFromComponents(metrics);
+            return {
+                ...base,
+                metrics: { ...metrics, composite },
+                composite,
+                confidence: typeof base.confidence === 'number' ? base.confidence : 0.8,
+                dayIndex: this.getDayIndex(base.date, startOfWeek)
+            };
+        });
+
         // Group tasks by day and calculate scores
         const dayScores = [];
         for (let day = 0; day < 7; day++) {
             const currentDate = new Date(startOfWeek);
             currentDate.setDate(startOfWeek.getDate() + day);
             const dateStr = currentDate.toISOString().split('T')[0];
-            
-            const dayTasks = tasks.filter(t => t.date === dateStr);
+
+            const dayTasks = enrichedTasks.filter(t => t.date === dateStr);
             const score = this.calculateDayScore(dayTasks);
             dayScores.push(score);
         }
-        
-        return dayScores;
+
+        return {
+            dayScores,
+            tasks: enrichedTasks,
+            startDate: startOfWeek.toISOString().split('T')[0]
+        };
     }
     
     calculateDayScore(tasks) {
@@ -136,13 +155,13 @@ class ProductivityIntegration {
         const avgDuration = totalDuration / count;
         const avgQuality = totalQuality / count;
         const avgGoal = totalGoal / count;
-        
-        // Default weights - can be adjusted
-        const weights = { e: 0.25, d: 0.25, q: 0.25, g: 0.25 };
-        const composite = weights.e * avgEffort + 
-                         weights.d * avgDuration + 
-                         weights.q * avgQuality + 
-                         weights.g * avgGoal;
+
+        const composite = this.calculateCompositeFromComponents({
+            effort: avgEffort,
+            duration: avgDuration,
+            quality: avgQuality,
+            goal: avgGoal
+        });
         
         return {
             effort: avgEffort,
@@ -154,18 +173,21 @@ class ProductivityIntegration {
     }
     
     calculateTaskScores(task) {
-        // Priority-based effort score
+        const scoring = window.PriosScoring;
+        if (scoring?.scoreTask) {
+            const sanitized = scoring.sanitizeTask ? scoring.sanitizeTask(task) : { ...task };
+            const result = scoring.scoreTask(sanitized);
+            return scoring.validateComponents(result.components);
+        }
+
+        // Fallback heuristic if scoring core is unavailable
         const priorityScores = { high: 90, medium: 60, low: 30 };
         const effort = priorityScores[task.priority] || 50;
-        
-        // Duration efficiency score
-        const optimalDuration = 60; // 60 minutes is optimal
-        const durationRatio = Math.min(task.duration / optimalDuration, 2);
-        const duration = task.completed 
+        const optimalDuration = 60;
+        const durationRatio = Math.min((task.duration || 0) / optimalDuration, 2);
+        const duration = task.completed
             ? 100 * Math.exp(-0.5 * Math.abs(durationRatio - 1))
             : 30;
-        
-        // Category-based quality score
         const categoryScores = {
             work: 85,
             learning: 80,
@@ -173,69 +195,165 @@ class ProductivityIntegration {
             personal: 60,
             wellness: 50
         };
-        const quality = (categoryScores[task.category] || 50) * 
-                       (task.completed ? 1.0 : 0.3);
-        
-        // Goal alignment score
+        const quality = (categoryScores[task.category] || 50) * (task.completed ? 1.0 : 0.3);
         const goal = task.goalId ? 80 : 30;
-        
-        return {
-            effort: effort,
-            duration: duration,
-            quality: quality,
-            goal: goal
-        };
+        return { effort, duration, quality, goal };
     }
-    
+
+    calculateCompositeFromComponents(components) {
+        const scoring = window.PriosScoring;
+        if (scoring?.computeComposite) {
+            return scoring.computeComposite(components, scoring.DEFAULT_WEIGHTS);
+        }
+        const weights = { effort: 0.25, duration: 0.25, quality: 0.25, goal: 0.25 };
+        return weights.effort * (components.effort || 0) +
+               weights.duration * (components.duration || 0) +
+               weights.quality * (components.quality || 0) +
+               weights.goal * (components.goal || 0);
+    }
+
+    _clampNumber(value, min = 0, max = 100) {
+        if (!Number.isFinite(value)) return min;
+        return Math.min(max, Math.max(min, value));
+    }
+
+    validateVisualizationPayload(payload) {
+        if (!payload) return payload;
+        if (Array.isArray(payload.data)) {
+            payload.data = payload.data.map(entry => {
+                const clone = { ...entry };
+                clone.value = Array.isArray(entry.value)
+                    ? entry.value.map(val => this._clampNumber(Number(val)))
+                    : [];
+                clone.intensity = this._clampNumber(entry.intensity ?? 0);
+                if (clone.metrics) {
+                    clone.metrics = {
+                        effort: this._clampNumber(clone.metrics.effort ?? 0),
+                        duration: this._clampNumber(clone.metrics.duration ?? 0),
+                        quality: this._clampNumber(clone.metrics.quality ?? 0),
+                        goal: this._clampNumber(clone.metrics.goal ?? 0),
+                        composite: this._clampNumber(clone.metrics.composite ?? 0)
+                    };
+                }
+                clone.confidence = this._clampNumber(clone.confidence ?? 0.8, 0, 1);
+                return clone;
+            });
+        }
+
+        if (Array.isArray(payload.taskDetails)) {
+            payload.taskDetails = payload.taskDetails.map(detail => ({
+                ...detail,
+                duration: Number(detail.duration) || 0,
+                confidence: this._clampNumber(detail.confidence ?? 0.8, 0, 1)
+            }));
+        }
+
+        return payload;
+    }
+
+    getDayIndex(dateString, startOfWeek) {
+        if (!dateString) return 0;
+        try {
+            const taskDate = new Date(dateString);
+            taskDate.setHours(0, 0, 0, 0);
+            const diff = (taskDate - startOfWeek.getTime()) / (1000 * 60 * 60 * 24);
+            if (Number.isNaN(diff)) return 0;
+            return Math.max(0, Math.min(6, Math.round(diff)));
+        } catch (e) {
+            return 0;
+        }
+    }
+
     // Format data for parallel coordinates visualization
     formatForParallelCoords(weeklyData) {
         const formattedData = [];
         const taskDetails = [];
-        
-        // Sample task names that would come from actual data
-        const sampleTasks = [
-            "Daily Standup", "Team Meeting", "Code Review", "Project Planning",
-            "Email Review", "Documentation", "Sprint Planning", "Client Meeting",
-            "Morning Run", "Gym Workout", "Yoga Session", "Meditation",
-            "Online Course", "Book Reading", "Tutorial Video", "Research Paper",
-            "Meal Prep", "Grocery Shopping", "Family Time", "House Cleaning"
-        ];
-        
+
         weeklyData.forEach((week, weekIndex) => {
-            // Create a line for each metric type
-            const metrics = ['effort', 'duration', 'quality', 'goal', 'composite'];
-            
-            metrics.forEach((metric, metricIndex) => {
-                const dataPoint = [];
-                
-                // Add scores for each day of the week
-                week.forEach(dayData => {
-                    dataPoint.push(dayData[metric]);
+            const baselineByDay = week.dayScores.map(day => day.composite || 0);
+            const startOfWeek = new Date(week.startDate);
+
+            week.tasks.forEach(task => {
+                const values = new Array(7).fill(0);
+                const metrics = task.metrics || {};
+                const composite = task.composite || metrics.composite || 0;
+                const avgComponent = ((metrics.effort || 0) + (metrics.duration || 0) + (metrics.quality || 0) + (metrics.goal || 0)) / 4 || composite;
+                const dayIndex = typeof task.dayIndex === 'number' ? task.dayIndex : this.getDayIndex(task.date, startOfWeek);
+                const baselineLift = Math.max(0, composite - (baselineByDay[dayIndex] || 0));
+
+                for (let day = 0; day < 7; day++) {
+                    const distance = Math.abs(day - dayIndex);
+                    const gaussian = Math.exp(-(distance * distance) / 1.6);
+                    const dayBaseline = baselineByDay[day] || 0;
+                    const goalBoost = distance === 0 ? (metrics.goal || 0) * 0.15 : 0;
+                    const contribution = gaussian * (0.65 * composite + 0.35 * avgComponent) + goalBoost;
+                    const blended = 0.35 * dayBaseline + contribution;
+                    values[day] = Math.max(0, Math.min(100, Number(blended.toFixed(2))));
+                }
+
+                const intensity = Math.max(0, Math.min(100, Number((composite).toFixed(2))));
+                values.push(intensity);
+
+                const metaIndex = taskDetails.length;
+                const priority = task.priority || (composite > 70 ? 'high' : composite > 45 ? 'medium' : 'low');
+
+                formattedData.push({
+                    value: values,
+                    metaIndex,
+                    intensity,
+                    peak: Math.max(...values.slice(0, 7)),
+                    lift: Number(baselineLift.toFixed(2)),
+                    metrics,
+                    energyLevel: task.energyLevel || 'medium',
+                    focusMode: task.focusMode || 'balanced',
+                    timeOfDay: task.timeOfDay || null,
+                    confidence: typeof task.confidence === 'number' ? task.confidence : 0.8,
+                    lineStyle: {
+                        width: Number((1.4 + (intensity / 33)).toFixed(2)),
+                        shadowBlur: intensity > 75 ? 8 : intensity > 55 ? 4 : 0,
+                        shadowColor: intensity > 55 ? 'rgba(255,214,102,0.45)' : 'transparent'
+                    },
+                    emphasis: {
+                        lineStyle: {
+                            width: 4,
+                            opacity: 1
+                        }
+                    },
+                    highlightDay: dayIndex
                 });
-                
-                // Add metric value for color coding (0-100 scale)
-                const avgScore = dataPoint.reduce((a, b) => a + b, 0) / 7;
-                dataPoint.push(avgScore);
-                
-                formattedData.push(dataPoint);
-                
-                // Create realistic task detail for tooltip
-                const taskIndex = (weekIndex * 5 + metricIndex) % sampleTasks.length;
-                const taskName = sampleTasks[taskIndex];
-                
+
                 taskDetails.push({
-                    title: taskName,
-                    category: metric === 'effort' ? 'work' : 
-                             metric === 'quality' ? 'learning' :
-                             metric === 'duration' ? 'fitness' : 'personal',
-                    priority: avgScore > 70 ? 'high' : avgScore > 40 ? 'medium' : 'low',
-                    weekIndex: weekIndex,
-                    metric: metric,
-                    description: `${metric.charAt(0).toUpperCase() + metric.slice(1)} score for ${taskName}`
+                    id: task.id,
+                    title: task.title || `Task ${task.id || metaIndex + 1}`,
+                    category: task.category || 'personal',
+                    priority,
+                    weekIndex,
+                    date: task.date,
+                    time: task.time || null,
+                    endTime: task.endTime || null,
+                    timeOfDay: task.timeOfDay || null,
+                    energyLevel: task.energyLevel || 'medium',
+                    focusMode: task.focusMode || 'balanced',
+                    location: task.location || null,
+                    collaborators: task.collaborators || [],
+                    contextTags: task.contextTags || [],
+                    contextSwitches: task.contextSwitches || 0,
+                    confidence: typeof task.confidence === 'number' ? task.confidence : 0.8,
+                    flowState: task.flowState || null,
+                    sentiment: task.sentiment || 'neutral',
+                    source: task.source || 'planner',
+                    metrics,
+                    composite,
+                    lift: Number(baselineLift.toFixed(2)),
+                    baseline: baselineByDay[dayIndex] || 0,
+                    description: task.description || task.notes || '',
+                    duration: task.duration,
+                    completed: task.completed,
+                    goalId: task.goalId
                 });
             });
         });
-        
+
         return { data: formattedData, taskDetails: taskDetails };
     }
     
@@ -244,6 +362,7 @@ class ProductivityIntegration {
         const result = await this.calculateWeeklyProductivity();
         
         // Add metadata
+        const defaultWeights = window.PriosScoring?.normalizeWeights(window.PriosScoring.DEFAULT_WEIGHTS) || { effort: 0.25, duration: 0.25, quality: 0.25, goal: 0.25 };
         const exportData = {
             data: result.data,
             taskDetails: result.taskDetails,
@@ -252,13 +371,15 @@ class ProductivityIntegration {
                 weeks: 4,
                 metrics: ['effort', 'duration', 'quality', 'goal', 'composite']
             },
-            weights: { effort: 0.25, duration: 0.25, quality: 0.25, goal: 0.25 }
+            weights: defaultWeights
         };
-        
+
+        const validated = this.validateVisualizationPayload(exportData);
+
         // Store in localStorage for cross-page access
-        localStorage.setItem('productivityVisualizationData', JSON.stringify(exportData));
-        
-        return exportData;
+        localStorage.setItem('productivityVisualizationData', JSON.stringify(validated));
+
+        return validated;
     }
     
     // Get real-time statistics
@@ -283,32 +404,37 @@ class ProductivityIntegration {
     
     // Analyze patterns for insights
     async analyzeProductivityPatterns() {
-        const weekData = await this.calculateWeeklyProductivity();
-        
-        // Find best performing days
+        const weeklyResult = await this.calculateWeeklyProductivity();
+        const dataLines = weeklyResult.data || [];
+
+        // Find best performing days based on line values
         const dayAverages = [];
         for (let day = 0; day < 7; day++) {
             let dayTotal = 0;
             let count = 0;
-            
-            weekData.forEach(dataPoint => {
-                if (dataPoint[day] !== undefined) {
-                    dayTotal += dataPoint[day];
+
+            dataLines.forEach(line => {
+                const values = Array.isArray(line) ? line : line.value;
+                if (values && values[day] !== undefined) {
+                    dayTotal += values[day];
                     count++;
                 }
             });
-            
+
             dayAverages.push(count > 0 ? dayTotal / count : 0);
         }
-        
+
         const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const bestDayIndex = dayAverages.indexOf(Math.max(...dayAverages));
         const worstDayIndex = dayAverages.indexOf(Math.min(...dayAverages));
-        
-        // Trend analysis
-        const recentScores = weekData.slice(-7).map(d => d[7]); // Get composite scores
+
+        // Trend analysis using intensity dimension
+        const recentScores = dataLines.slice(-Math.min(28, dataLines.length)).map(line => {
+            const values = Array.isArray(line) ? line : line.value;
+            return values ? (values[7] ?? 0) : 0;
+        });
         const trend = this.calculateTrend(recentScores);
-        
+
         return {
             bestDay: days[bestDayIndex],
             bestDayScore: dayAverages[bestDayIndex],
@@ -376,9 +502,9 @@ class VisualizationUpdater {
         
         if (document.getElementById('trend')) {
             const trendIcons = {
-                'improving': '📈',
-                'stable': '➡️',
-                'declining': '📉'
+                'improving': 'UP',
+                'stable': '--',
+                'declining': 'DOWN'
             };
             
             const trendColors = {

@@ -85,6 +85,51 @@ class JournalNLPParser {
       /(.+?)\s+(?:took|lasted|went for)\s+/gi,
       /(?:had|attended|participated in)\s+(?:a\s+)?(.+?)(?:\s+for|\s+with|,|\.|\s+and\s+|$)/gi
     ];
+
+    // Energy, focus, and context indicators
+    this.energyKeywords = {
+      high: ['energized', 'charged', 'fired up', 'motivated', 'pumped', 'alert', 'fresh'],
+      elevated: ['focused', 'engaged', 'driven', 'determined', 'steady'],
+      medium: ['okay', 'fine', 'normal', 'typical', 'alright'],
+      low: ['tired', 'sleepy', 'drained', 'sluggish', 'fatigued', 'worn down'],
+      depleted: ['exhausted', 'burned out', 'burnt out', 'wiped', 'spent']
+    };
+
+    this.focusKeywords = {
+      deep: ['deep work', 'heads down', 'blocked off', 'no meetings', 'in the zone', 'flow'],
+      creative: ['brainstorm', 'ideation', 'design', 'sketch', 'draft', 'write', 'compose'],
+      collaborative: ['paired', 'collaborated', 'with the team', 'with team', 'with client', 'met with', 'synced with', 'reviewed with'],
+      administrative: ['email', 'inbox', 'paperwork', 'errand', 'admin', 'organize', 'filing'],
+      recovery: ['rested', 'recovered', 'recharge', 'break', 'walked', 'stretched']
+    };
+
+    this.locationKeywords = {
+      home: ['at home', 'from home', 'house', 'apartment'],
+      office: ['office', 'onsite', 'headquarters', 'hq', 'workspace'],
+      remote: ['remote', 'virtual', 'online', 'zoom', 'teams call'],
+      cafe: ['cafe', 'coffee shop', 'coffeeshop'],
+      commute: ['commute', 'train', 'bus', 'drive', 'driving', 'metro']
+    };
+
+    this.contextKeywords = {
+      deadline: ['deadline', 'due tomorrow', 'due today', 'due soon', 'cutoff'],
+      review: ['review', 'retro', 'retrospective', 'feedback', 'q&a'],
+      preparation: ['prepare', 'prep', 'setup', 'set up', 'plan'],
+      delivery: ['delivered', 'shipped', 'launched', 'released'],
+      learning: ['learned', 'studied', 'course', 'class']
+    };
+
+    this.flowKeywords = {
+      flow: ['in flow', 'flow state', 'in the zone', 'lost track of time'],
+      fractured: ['fragmented', 'scattered', 'jumped between', 'context switching']
+    };
+
+    this.collaborationPatterns = [
+      /with\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/g,
+      /with\s+the\s+(team|group|crew|board)/gi,
+      /(paired|pairing|partnered)\s+with\s+([A-Z][a-z]+)/gi
+    ];
+
   }
 
   // Main parsing function
@@ -152,7 +197,14 @@ class JournalNLPParser {
       sentiment: null,
       quality: null,
       notes: '',
-      confidence: 0
+      confidence: 0,
+      energyLevel: 'medium',
+      focusMode: 'balanced',
+      location: null,
+      collaborators: [],
+      contextTags: [],
+      timeOfDay: null,
+      flowState: null
     };
 
     // Extract time first (explicit times or periods)
@@ -163,6 +215,14 @@ class JournalNLPParser {
     task.duration = durationInfo.minutes;
     // Prefer range start time if available; else use standalone time
     task.time = durationInfo.startTime || timeInfo.startTime || null;
+    task.endTime = durationInfo.endTime || null;
+    task.timeOfDay = durationInfo.timeOfDay || timeInfo.timeOfDay || this.inferTimeOfDay(segment);
+    task.energyLevel = this.detectEnergyLevel(segment);
+    task.focusMode = this.detectFocusMode(segment);
+    task.location = this.detectLocation(segment);
+    task.collaborators = this.detectCollaborators(segment);
+    task.contextTags = this.extractContextTags(segment);
+    task.flowState = this.detectFlowState(segment);
     
     // Remove duration from segment for cleaner title extraction
     let cleanSegment = segment;
@@ -215,9 +275,14 @@ class JournalNLPParser {
       if (rangeMatch[6] === 'am' && endHour === 12) adjustedEnd = 0;
       
       totalMinutes = (adjustedEnd * 60 + endMin) - (adjustedStart * 60 + startMin);
+      if (totalMinutes <= 0) {
+        totalMinutes = ((adjustedEnd + 24) * 60 + endMin) - (adjustedStart * 60 + startMin);
+      }
       matchedText = rangeMatch[0];
-      startTime = `${String(adjustedStart).padStart(2,'0')}:${String(startMin).padStart(2,'0')}`;
-      return { minutes: totalMinutes > 0 ? totalMinutes : 0, matchedText, confidence: 0.95, startTime };
+      startTime = `${String(adjustedStart % 24).padStart(2,'0')}:${String(startMin).padStart(2,'0')}`;
+      const endTime = `${String(adjustedEnd % 24).padStart(2,'0')}:${String(endMin).padStart(2,'0')}`;
+      const timeOfDay = this.mapHourToPeriod(adjustedStart);
+      return { minutes: totalMinutes > 0 ? totalMinutes : 0, matchedText, confidence: 0.95, startTime, endTime, timeOfDay };
     }
     
     // Try relative duration patterns
@@ -229,10 +294,14 @@ class JournalNLPParser {
         'evening': 180,    // 3 hours
         'day': 480        // 8 hours
       };
+      const period = relativeMatch[1].toLowerCase();
       return { 
-        minutes: periods[relativeMatch[1].toLowerCase()] || 120, 
+        minutes: periods[period] || 120, 
         matchedText: relativeMatch[0],
-        confidence: 0.7
+        confidence: 0.7,
+        startTime: null,
+        endTime: null,
+        timeOfDay: period
       };
     }
     
@@ -247,7 +316,10 @@ class JournalNLPParser {
       return { 
         minutes: fractions[fractionMatch[1].toLowerCase()] || 30, 
         matchedText: fractionMatch[0],
-        confidence: 0.85
+        confidence: 0.85,
+        startTime: null,
+        endTime: null,
+        timeOfDay: null
       };
     }
     
@@ -280,7 +352,9 @@ class JournalNLPParser {
       minutes: totalMinutes || null, 
       matchedText,
       confidence: totalMinutes ? 0.9 : 0,
-      startTime
+      startTime,
+      endTime: null,
+      timeOfDay: null
     };
   }
 
@@ -306,7 +380,8 @@ class JournalNLPParser {
         if (ap === 'pm' && h < 12) h += 12;
         if (ap === 'am' && h === 12) h = 0;
         const startTime = `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
-        return { startTime, matchedText: m[0] };
+        const timeOfDay = this.mapHourToPeriod(h);
+        return { startTime, matchedText: m[0], timeOfDay };
       }
     }
 
@@ -330,7 +405,8 @@ class JournalNLPParser {
     };
     const periodMatch = lower.match(/\b(morning|afternoon|evening|night|tonight|noon|midday|midnight|lunch|breakfast|dinner)\b/i);
     if (periodMatch) {
-      return { startTime: periodMap[periodMatch[1].toLowerCase()], matchedText: periodMatch[0] };
+      const periodKey = periodMatch[1].toLowerCase();
+      return { startTime: periodMap[periodKey], matchedText: periodMatch[0], timeOfDay: this.inferTimeOfDay(periodKey) || periodKey };
     }
     return { startTime: null, matchedText: '' };
   }
@@ -451,6 +527,113 @@ class JournalNLPParser {
     };
   }
 
+  detectEnergyLevel(text) {
+    const lower = text.toLowerCase();
+    for (const [level, keywords] of Object.entries(this.energyKeywords)) {
+      if (keywords.some(keyword => lower.includes(keyword))) {
+        return level;
+      }
+    }
+    return 'medium';
+  }
+
+  detectFocusMode(text) {
+    const lower = text.toLowerCase();
+    for (const [mode, keywords] of Object.entries(this.focusKeywords)) {
+      if (keywords.some(keyword => lower.includes(keyword))) {
+        return mode;
+      }
+    }
+    return 'balanced';
+  }
+
+  detectLocation(text) {
+    const lower = text.toLowerCase();
+    for (const [location, keywords] of Object.entries(this.locationKeywords)) {
+      if (keywords.some(keyword => lower.includes(keyword))) {
+        return location;
+      }
+    }
+    return null;
+  }
+
+  detectCollaborators(text) {
+    const collaborators = new Set();
+    for (const pattern of this.collaborationPatterns) {
+      const regex = new RegExp(pattern.source, pattern.flags);
+      let match;
+      while ((match = regex.exec(text)) !== null) {
+        const captured = match.slice(1).filter(Boolean).pop();
+        if (captured) {
+          collaborators.add(captured.trim());
+        }
+      }
+    }
+    const lower = text.toLowerCase();
+    if (lower.includes('team')) collaborators.add('team');
+    if (lower.includes('client')) collaborators.add('client');
+    if (lower.includes('manager')) collaborators.add('manager');
+    return [...collaborators];
+  }
+
+  extractContextTags(text) {
+    const lower = text.toLowerCase();
+    const tags = new Set();
+    for (const [tag, keywords] of Object.entries(this.contextKeywords)) {
+      if (keywords.some(keyword => lower.includes(keyword))) {
+        tags.add(tag);
+      }
+    }
+    return [...tags];
+  }
+
+  detectFlowState(text) {
+    const lower = text.toLowerCase();
+    if (this.flowKeywords.flow.some(keyword => lower.includes(keyword))) {
+      return 'flow';
+    }
+    if (this.flowKeywords.fractured.some(keyword => lower.includes(keyword))) {
+      return 'fractured';
+    }
+    return null;
+  }
+
+  inferTimeOfDay(text) {
+    const lower = text.toLowerCase();
+    const mapping = {
+      'early morning': 'early-morning',
+      'morning': 'morning',
+      'mid-morning': 'morning',
+      'noon': 'midday',
+      'midday': 'midday',
+      'afternoon': 'afternoon',
+      'late afternoon': 'late-afternoon',
+      'evening': 'evening',
+      'late evening': 'late-evening',
+      'night': 'night',
+      'tonight': 'night',
+      'midnight': 'night'
+    };
+    for (const [key, value] of Object.entries(mapping)) {
+      if (lower.includes(key)) {
+        return value;
+      }
+    }
+    return null;
+  }
+
+  mapHourToPeriod(hour) {
+    if (hour === null || Number.isNaN(hour)) return null;
+    const h = ((Number(hour) % 24) + 24) % 24;
+    if (h < 5) return 'night';
+    if (h < 9) return 'early-morning';
+    if (h < 12) return 'morning';
+    if (h < 15) return 'midday';
+    if (h < 18) return 'afternoon';
+    if (h < 21) return 'evening';
+    return 'late-evening';
+  }
+
   calculateConfidence(task, originalSegment) {
     let confidence = 0;
     
@@ -467,6 +650,10 @@ class JournalNLPParser {
     // Sentiment/quality confidence
     if (task.sentiment !== 'neutral') confidence += 0.1;
     if (task.quality) confidence += 0.1;
+    if (task.energyLevel && task.energyLevel !== 'medium') confidence += 0.05;
+    if (task.focusMode && task.focusMode !== 'balanced') confidence += 0.05;
+    if (task.contextTags && task.contextTags.length) confidence += 0.05;
+    if (task.collaborators && task.collaborators.length) confidence += 0.05;
     
     return Math.min(confidence, 1.0);
   }
@@ -500,7 +687,36 @@ class JournalNLPParser {
     if (durationInfo.confidence && durationInfo.confidence < 0.8) {
       notes.push('Duration estimated');
     }
-    
+
+    const energy = this.detectEnergyLevel(segment);
+    if (energy && energy !== 'medium') {
+      notes.push(`Energy ${energy}`);
+    }
+
+    const focus = this.detectFocusMode(segment);
+    if (focus && focus !== 'balanced') {
+      notes.push(`Focus ${focus}`);
+    }
+
+    const location = this.detectLocation(segment);
+    if (location) {
+      notes.push(`Location ${location}`);
+    }
+
+    const collaborators = this.detectCollaborators(segment);
+    if (collaborators.length) {
+      notes.push(`With ${collaborators.join(', ')}`);
+    }
+
+    const contextTags = this.extractContextTags(segment);
+    if (contextTags.length) {
+      notes.push(`Context: ${contextTags.join(', ')}`);
+    }
+
+    if (durationInfo.timeOfDay) {
+      notes.push(`Time ${durationInfo.timeOfDay}`);
+    }
+
     return notes.join('. ');
   }
 
@@ -519,6 +735,25 @@ class JournalNLPParser {
           prev.notes = [prev.notes, current.notes].filter(Boolean).join('. ');
           if (!prev.duration && current.duration) {
             prev.duration = current.duration;
+          }
+          if (!prev.endTime && current.endTime) {
+            prev.endTime = current.endTime;
+          }
+          if (!prev.timeOfDay && current.timeOfDay) {
+            prev.timeOfDay = current.timeOfDay;
+          }
+          const combinedContexts = new Set([...(prev.contextTags || []), ...(current.contextTags || [])]);
+          prev.contextTags = [...combinedContexts];
+          const combinedCollaborators = new Set([...(prev.collaborators || []), ...(current.collaborators || [])]);
+          prev.collaborators = [...combinedCollaborators];
+          if ((!prev.energyLevel || prev.energyLevel === 'medium') && current.energyLevel) {
+            prev.energyLevel = current.energyLevel;
+          }
+          if ((!prev.focusMode || prev.focusMode === 'balanced') && current.focusMode) {
+            prev.focusMode = current.focusMode;
+          }
+          if (!prev.location && current.location) {
+            prev.location = current.location;
           }
           continue;
         }
@@ -558,20 +793,24 @@ class JournalPreviewUI {
 
     const html = tasks.map(task => {
       const confidenceClass = task.confidence > 0.7 ? 'high' : task.confidence > 0.4 ? 'medium' : 'low';
-      const sentimentIcon = {
-        'positive': '😊',
-        'negative': '😔',
-        'neutral': '😐'
-      }[task.sentiment] || '';
+      const metaSegments = [];
+      if (task.duration) metaSegments.push(`${task.duration}m`);
+      if (task.timeOfDay) metaSegments.push(task.timeOfDay);
+      if (task.energyLevel && task.energyLevel !== 'medium') metaSegments.push(`energy:${task.energyLevel}`);
+      if (task.focusMode && task.focusMode !== 'balanced') metaSegments.push(`focus:${task.focusMode}`);
+      if (task.location) metaSegments.push(`location:${task.location}`);
+      if (task.collaborators && task.collaborators.length) metaSegments.push(`with ${task.collaborators.join(', ')}`);
+      if (task.contextTags && task.contextTags.length) metaSegments.push(`context:${task.contextTags.join(', ')}`);
+      if (task.sentiment) metaSegments.push(`mood:${task.sentiment}`);
+      const metaText = metaSegments.join(' | ');
 
       return `
         <div class="task-preview ${confidenceClass}-confidence">
           <div class="task-header">
             <span class="task-title">${task.title}</span>
             <span class="task-meta">
-              ${task.duration ? `⏱️ ${task.duration}m` : ''}
-              ${sentimentIcon}
-              <span class="category-badge ${task.category}">${task.category}</span>
+              ${metaText}
+              ${metaText ? ' | ' : ''}<span class="category-badge ${task.category}">${task.category}</span>
             </span>
           </div>
           ${task.notes ? `<div class="task-notes">${task.notes}</div>` : ''}
@@ -629,13 +868,23 @@ class JournalPreviewUI {
         priority: p.sentiment === 'positive' ? 'high' : p.sentiment === 'negative' ? 'low' : 'medium',
         date: today,
         time: p.time || '',
+        endTime: p.endTime || null,
+        timeOfDay: p.timeOfDay || null,
         duration: p.duration || 60,
         category: p.category,
         goalId: null,
         completed: true,
         sentiment: p.sentiment,
         quality: p.quality,
-        confidence: p.confidence
+        confidence: p.confidence,
+        energyLevel: p.energyLevel || 'medium',
+        focusMode: p.focusMode || 'balanced',
+        location: p.location || null,
+        collaborators: p.collaborators || [],
+        contextTags: p.contextTags || [],
+        flowState: p.flowState || null,
+        source: 'journal',
+        extractedAt: new Date().toISOString()
       };
       await window.TaskAPI.saveTask(task);
       savedCount++;
@@ -650,26 +899,34 @@ function showSaveSummary(tasks) {
   const summary = {
     totalTime: tasks.reduce((sum, t) => sum + (t.duration || 0), 0),
     byCategory: {},
-    avgSentiment: 0
+    avgSentiment: 0,
+    energyBalance: {},
+    focusBalance: {}
   };
-  
+
   tasks.forEach(t => {
-    if (!summary.byCategory[t.category]) {
-      summary.byCategory[t.category] = { count: 0, minutes: 0 };
+    const category = t.category || 'uncategorized';
+    if (!summary.byCategory[category]) {
+      summary.byCategory[category] = { count: 0, minutes: 0 };
     }
-    summary.byCategory[t.category].count++;
-    summary.byCategory[t.category].minutes += t.duration || 0;
+    summary.byCategory[category].count++;
+    summary.byCategory[category].minutes += t.duration || 0;
+
+    const energy = t.energyLevel || 'medium';
+    summary.energyBalance[energy] = (summary.energyBalance[energy] || 0) + 1;
+
+    const focus = t.focusMode || 'balanced';
+    summary.focusBalance[focus] = (summary.focusBalance[focus] || 0) + 1;
   });
-  
-  // Calculate average sentiment
+
   const sentimentScores = {
-    'positive': 1,
-    'neutral': 0,
-    'negative': -1
+    positive: 1,
+    neutral: 0,
+    negative: -1
   };
-  summary.avgSentiment = tasks.reduce((sum, t) => 
-    sum + sentimentScores[t.sentiment], 0) / tasks.length;
-  
+  summary.avgSentiment = tasks.length ? tasks.reduce((sum, t) =>
+    sum + (sentimentScores[t.sentiment] || 0), 0) / tasks.length : 0;
+
   console.log('Day Summary:', summary);
   // You could display this in a modal or tooltip
 }

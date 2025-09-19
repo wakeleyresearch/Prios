@@ -7,126 +7,105 @@
     <link rel="stylesheet" href="theme.css" />
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background: #2a2a2a;
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            color: #fff;
-        }
-        
-        #header {
-            padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        }
-        
-        h1 {
-            margin: 0;
-            font-size: 28px;
-            font-weight: 300;
-            letter-spacing: 1px;
-        }
-        
-        .subtitle {
-            margin-top: 8px;
-            opacity: 0.9;
-            font-size: 14px;
-        }
-        
-        #main {
-            height: 800px;
-            margin: 20px;
-            border-radius: 8px;
-            background: #333;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-        
-        #controls {
-            padding: 20px;
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        
-        .control-group {
+        body { margin: 0; }
+
+        .analytics-shell {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: var(--space-5);
         }
-        
-        label {
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            opacity: 0.8;
+
+        .analytics-header {
+            position: relative;
+            display: grid;
+            gap: var(--space-3);
+            padding: var(--space-5);
+            background: rgba(18, 28, 44, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            backdrop-filter: var(--blur-backdrop);
         }
-        
-        select, input[type="range"], button {
-            padding: 8px 12px;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            color: #fff;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.3s ease;
+
+        .analytics-heading { display: grid; gap: var(--space-2); }
+        .analytics-heading h1 { margin: 0; font-size: 1.9rem; font-weight: 700; }
+        .analytics-heading p { margin: 0; color: var(--color-text-secondary); max-width: 60ch; }
+        .analytics-eyebrow { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-text-muted); }
+        .analytics-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+        .analytics-layout { display: grid; gap: var(--space-4); }
+
+        .controls-card {
+            display: grid;
+            gap: var(--space-3);
+            padding: var(--space-4);
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            background: rgba(18, 28, 44, 0.82);
+            box-shadow: var(--shadow-sm);
         }
-        
-        select:hover, button:hover {
-            background: rgba(255,255,255,0.15);
-            border-color: rgba(255,255,255,0.3);
+
+        #controls {
+            display: grid;
+            gap: var(--space-3);
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         }
-        
-        input[type="range"] {
-            width: 200px;
+
+        .control-group { display: grid; gap: 6px; }
+        .control-group label { font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-text-muted); }
+        .control-group button { width: 100%; }
+        .range-input { width: 100%; accent-color: var(--accent-primary); }
+
+        .chart-card {
+            padding: var(--space-4);
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            background: rgba(18, 30, 48, 0.88);
+            box-shadow: var(--shadow-md);
+            display: grid;
+            gap: var(--space-3);
         }
-        
-        #stats-panel {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(0,0,0,0.8);
-            padding: 20px;
-            border-radius: 8px;
-            min-width: 250px;
-            -webkit-backdrop-filter: blur(10px);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.1);
+
+        #main {
+            height: 620px;
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            background: rgba(15, 23, 42, 0.7);
         }
-        
+
+        .stats-card {
+            padding: var(--space-4);
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            background: rgba(18, 28, 44, 0.82);
+            box-shadow: var(--shadow-sm);
+            display: grid;
+            gap: var(--space-3);
+        }
+
+        .stats-card h3 { margin: 0; font-size: 1rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-text-secondary); }
+
+        .stat-grid { display: grid; gap: var(--space-2); }
         .stat-item {
             display: flex;
             justify-content: space-between;
-            margin: 10px 0;
-            padding: 8px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            align-items: center;
+            padding: var(--space-2) 0;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.14);
         }
-        
-        .stat-label {
-            opacity: 0.7;
-            font-size: 13px;
+
+        .stat-item:last-child { border-bottom: none; }
+        .stat-label { font-size: 0.8rem; color: var(--color-text-muted); }
+        .stat-value { font-weight: 600; font-size: 0.95rem; color: var(--color-text-primary); }
+
+        .insights-panel { max-height: 220px; overflow-y: auto; }
+
+        .planner-note { font-size: 0.85rem; color: var(--color-text-muted); }
+        .planner-note a { color: var(--accent-primary); }
+
+        @media (min-width: 1024px) {
+            .analytics-layout { grid-template-columns: 3fr 2fr; }
         }
-        
-        .stat-value {
-            font-weight: bold;
-            font-size: 15px;
-        }
-        
-        .performance-indicator {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-left: 8px;
-        }
-        
-        .high { background: #ff6b6b; }
-        .medium { background: #ffd93d; }
-    .low { background: #6bcf7f; }
-    .stats-title { margin-top: 0; margin-bottom: 16px; }
-    .planner-link { position: absolute; top: 20px; right: 20px; }
-    .planner-btn { padding: 10px 20px; background: rgba(255,255,255,0.2); color: white; text-decoration: none; border-radius: 5px; border: 1px solid rgba(255,255,255,0.3); display: inline-flex; align-items: center; gap: 8px; }
     </style>
 </head>
 <body>
@@ -140,122 +119,127 @@
             <a href="productivity-parallel-coords.html" class="active">Analytics</a>
         </div>
     </div>
-    <div id="header">
-        <h1>Productivity Trajectory Analysis</h1>
-        <div class="subtitle">Composite Score: S = w_e·E + w_d·D + w_q·Q + w_g·G | Real-time Adaptive Weighting</div>
-        <div class="planner-link">
-            <a href="task-planner-enhanced.html" class="planner-btn">
-                <span>📅</span> Task Planner
-            </a>
-        </div>
-    </div>
-    
-    <div id="controls">
-        <div class="control-group">
-            <label for="timeRange">Time Range</label>
-            <select id="timeRange" aria-label="Time range" title="Time range">
-                <option value="week">This Week</option>
-                <option value="month">This Month</option>
-                <option value="quarter">This Quarter</option>
-            </select>
-        </div>
-        
-        <div class="control-group">
-            <label for="optimizer">Weight Optimization</label>
-            <select id="optimizer" aria-label="Weight optimization" title="Weight optimization">
-                <option value="adam">Adam Optimizer</option>
-                <option value="pso">Particle Swarm</option>
-                <option value="bayesian">Bayesian</option>
-            </select>
-        </div>
-        
-        <div class="control-group">
-            <label for="anomalyMethod">Anomaly Detection</label>
-            <select id="anomalyMethod" aria-label="Anomaly detection" title="Anomaly detection">
-                <option value="cusum">CUSUM-EWMA</option>
-                <option value="isolation">Isolation Forest</option>
-                <option value="ensemble">Ensemble</option>
-            </select>
-        </div>
-        
-        <div class="control-group">
-            <label for="opacity">Line Opacity</label>
-            <input type="range" id="opacity" min="1" max="100" value="30" aria-label="Line opacity" title="Line opacity">
-        </div>
-        
-        <div class="control-group">
-            <label for="priorityFilter">Priority Filter</label>
-            <select id="priorityFilter" aria-label="Priority filter" title="Priority filter">
-                <option value="all">All</option>
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
-            </select>
-        </div>
-        
-        <div class="control-group">
-            <label>&nbsp;</label>
-            <button onclick="updateVisualization()">Update View</button>
-        </div>
-        
-        <div class="control-group">
-            <label>&nbsp;</label>
-            <button onclick="detectPatterns()">Detect Patterns</button>
-        </div>
-    </div>
-    
-    <div id="main"></div>
-    
-    <div id="stats-panel">
-        <h3 class="stats-title">Performance Metrics</h3>
-        <div class="stat-item">
-            <span class="stat-label">Cronbach's α</span>
-            <span class="stat-value" id="cronbach">--</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-label">Mean Score</span>
-            <span class="stat-value" id="meanScore">--</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-label">Std Deviation</span>
-            <span class="stat-value" id="stdDev">--</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-label">Trend</span>
-            <span class="stat-value" id="trend">--</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-label">Anomalies</span>
-            <span class="stat-value" id="anomalies">--</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-label">Current State</span>
-            <span class="stat-value" id="state">--</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-label">Insights</span>
-            <span class="stat-value"></span>
-        </div>
-        <div id="insightsPanel" class="insights-panel"></div>
-    </div>
-    
+
+    <main class="app-shell analytics-shell">
+        <section class="analytics-header">
+            <div class="analytics-heading">
+                <span class="analytics-eyebrow">Trajectory explorer</span>
+                <h1>Parallel Coordinates</h1>
+                <p>Inspect how effort, duration, quality, and goal alignment evolve together. Adjust weighting, filter by priority, and surface anomalies in seconds.</p>
+            </div>
+            <div class="analytics-actions">
+                <a class="btn" href="dashboard.html">Back to dashboard</a>
+                <a class="btn btn-secondary" href="task-planner-enhanced.html#quick-add">Schedule follow-up</a>
+            </div>
+        </section>
+
+        <section class="analytics-layout">
+            <div class="controls-card">
+                <div id="controls">
+                    <div class="control-group">
+                        <label for="timeRange">Time range</label>
+                        <select id="timeRange" class="input" aria-label="Time range" title="Time range">
+                            <option value="week">This Week</option>
+                            <option value="month">This Month</option>
+                            <option value="quarter">This Quarter</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="optimizer">Weight optimization</label>
+                        <select id="optimizer" class="input" aria-label="Weight optimization" title="Weight optimization">
+                            <option value="adam">Adam Optimizer</option>
+                            <option value="pso">Particle Swarm</option>
+                            <option value="bayesian">Bayesian</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="anomalyMethod">Anomaly detection</label>
+                        <select id="anomalyMethod" class="input" aria-label="Anomaly detection" title="Anomaly detection">
+                            <option value="cusum">CUSUM-EWMA</option>
+                            <option value="isolation">Isolation Forest</option>
+                            <option value="ensemble">Ensemble</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="opacity">Line opacity</label>
+                        <input type="range" id="opacity" class="range-input" min="1" max="100" value="30" aria-label="Line opacity" title="Line opacity">
+                    </div>
+                    <div class="control-group">
+                        <label for="priorityFilter">Priority filter</label>
+                        <select id="priorityFilter" class="input" aria-label="Priority filter" title="Priority filter">
+                            <option value="all">All</option>
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label class="helper">Actions</label>
+                        <button class="btn btn-ghost" onclick="updateVisualization()">Update view</button>
+                    </div>
+                    <div class="control-group">
+                        <label class="helper">Insights</label>
+                        <button class="btn btn-ghost" onclick="detectPatterns()">Detect patterns</button>
+                    </div>
+                </div>
+                <p class="planner-note">Weights and anomalies reuse the shared scoring model, so adjustments here sync directly with the dashboard and planner analytics.</p>
+            </div>
+
+            <div class="chart-card">
+                <div id="main"></div>
+            </div>
+
+            <div class="stats-card" id="stats-panel">
+                <h3>Performance metrics</h3>
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Cronbach's alpha</span>
+                        <span class="stat-value" id="cronbach">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Mean score</span>
+                        <span class="stat-value" id="meanScore">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Std deviation</span>
+                        <span class="stat-value" id="stdDev">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Trend</span>
+                        <span class="stat-value" id="trend">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Anomalies</span>
+                        <span class="stat-value" id="anomalies">--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Current state</span>
+                        <span class="stat-value" id="state">--</span>
+                    </div>
+                </div>
+                <div id="insightsPanel" class="insights-panel"></div>
+            </div>
+        </section>
+    </main>
+
+    <script src="productivity-core.js"></script>
     <script src="productivity-viz.js"></script>
     <script src="integration.js"></script>
-        <script>
-            // Apply default settings to controls
-            document.addEventListener('DOMContentLoaded', () => {
-                try {
-                    const s = JSON.parse(localStorage.getItem('appSettings') || '{}');
-                    if (s?.optimizer) {
-                        const opt = document.getElementById('optimizer');
-                        if (opt) opt.value = s.optimizer;
-                    }
-                    if (s?.anomaly) {
-                        const an = document.getElementById('anomalyMethod');
-                        if (an) an.value = s.anomaly;
-                    }
-                } catch {}
-            });
-        </script>
+    <script>
+        // Apply default settings to controls
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                const s = JSON.parse(localStorage.getItem('appSettings') || '{}');
+                if (s?.optimizer) {
+                    const opt = document.getElementById('optimizer');
+                    if (opt) opt.value = s.optimizer;
+                }
+                if (s?.anomaly) {
+                    const an = document.getElementById('anomalyMethod');
+                    if (an) an.value = s.anomaly;
+                }
+            } catch {}
+        });
+    </script>
 </body>
 </html>

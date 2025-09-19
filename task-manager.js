@@ -72,7 +72,12 @@ async function loadData() {
     const taskRequest = taskStore.getAll();
     
     taskRequest.onsuccess = () => {
-        tasks = taskRequest.result;
+        const rawTasks = taskRequest.result || [];
+        tasks = rawTasks.map(record => {
+            const taskInstance = new Task(record);
+            taskInstance.id = record.id;
+            return taskInstance;
+        });
         renderCalendar();
     };
     
@@ -93,30 +98,51 @@ async function loadData() {
 // Task Management Functions
 class Task {
     constructor(data) {
-        this.title = data.title;
-        this.description = data.description || '';
-        this.priority = data.priority || 'medium';
-        this.date = data.date;
-        this.time = data.time || '';
-        this.duration = data.duration || 60;
-        this.category = data.category || 'personal';
-        this.goalId = data.goalId || null;
-        this.completed = data.completed || false;
-        this.recurring = data.recurring || null;
-        this.effort = data.effort || 0;
-        this.quality = data.quality || 0;
+        const base = window.PriosScoring?.sanitizeTask ? window.PriosScoring.sanitizeTask(data || {}) : (data || {});
+        this.id = base.id ?? data?.id ?? null;
+        this.title = base.title || '';
+        this.description = base.description || '';
+        this.priority = base.priority || 'medium';
+        this.date = base.date;
+        this.time = base.time || '';
+        this.endTime = base.endTime || '';
+        this.timeOfDay = base.timeOfDay || null;
+        this.duration = base.duration || 60;
+        this.category = base.category || 'personal';
+        this.goalId = base.goalId || null;
+        this.goalImportance = base.goalImportance || 0;
+        this.goalUrgency = base.goalUrgency || 0;
+        this.completed = Boolean(base.completed);
+        this.progress = base.progress || (this.completed ? 1 : 0.6);
+        this.recurring = base.recurring || null;
+        this.energyLevel = base.energyLevel || 'medium';
+        this.energy = this.energyLevel;
+        this.focusMode = base.focusMode || 'balanced';
+        this.location = base.location || null;
+        this.collaborators = Array.isArray(base.collaborators) ? base.collaborators : [];
+        this.contextTags = Array.isArray(base.contextTags) ? base.contextTags : [];
+        this.contextSwitches = base.contextSwitches || 0;
+        this.flowState = base.flowState || null;
+        this.sentiment = base.sentiment || 'neutral';
+        this.quality = base.quality || 0;
+        this.confidence = typeof base.confidence === 'number' ? base.confidence : 0.8;
+        this.source = base.source || 'manual';
+        this.extractedAt = base.extractedAt || null;
+        this.metrics = base.metrics || null;
     }
     
     getProductivityComponents() {
-        // Calculate E, D, Q, G components for productivity score
-        const components = {
+        if (window.PriosScoring?.scoreTask) {
+            const scored = window.PriosScoring.scoreTask(this);
+            this.metrics = { ...scored.components, composite: scored.composite, weights: scored.weights };
+            return scored.components;
+        }
+        return {
             effort: this.calculateEffortScore(),
             duration: this.calculateDurationScore(),
             quality: this.calculateQualityScore(),
             goal: this.calculateGoalScore()
         };
-        
-        return components;
     }
     
     calculateEffortScore() {
@@ -178,23 +204,35 @@ function saveTask(task) {
     const doSave = () => {
         const transaction = db.transaction(['tasks'], 'readwrite');
         const store = transaction.objectStore('tasks');
-        
-        const request = task.id ? store.put(task) : store.add(task);
-        
+
+        const normalized = task instanceof Task ? task : new Task(task);
+        if (task.id != null) normalized.id = task.id;
+        const record = { ...normalized };
+        const isUpdate = normalized.id != null;
+
+        if (window.PriosScoring?.scoreTask) {
+            const scored = window.PriosScoring.scoreTask(normalized);
+            record.metrics = { ...scored.components, composite: scored.composite, weights: scored.weights };
+            task.metrics = record.metrics;
+        }
+
+        const request = isUpdate ? store.put(record) : store.add(record);
+
         request.onsuccess = (e) => {
-            const newId = task.id ? task.id : e.target.result;
+            const newId = isUpdate ? record.id : e.target.result;
+            record.id = newId;
             if (!task.id) task.id = newId;
-            console.log('Task saved successfully', task);
+            console.log('Task saved successfully', record);
             loadData();
-            calculateDailyProductivity(task.date);
-            window.dispatchEvent(new CustomEvent('tasks-changed', { detail: { type: task.id ? 'update' : 'create', task } }));
+            if (record.date) calculateDailyProductivity(record.date);
+            window.dispatchEvent(new CustomEvent('tasks-changed', { detail: { type: isUpdate ? 'update' : 'create', task: record } }));
         };
-        
+
         request.onerror = () => {
             console.error('Error saving task:', request.error);
         };
     };
-    
+
     if (!db) {
         ensureDBReady().then(doSave);
     } else {
@@ -205,50 +243,65 @@ function saveTask(task) {
 // Calculate and store daily productivity scores
 async function calculateDailyProductivity(date) {
     const dayTasks = tasks.filter(t => t.date === date);
-    
-    if (dayTasks.length === 0) return;
-    
-    // Calculate component scores
-    let totalE = 0, totalD = 0, totalQ = 0, totalG = 0;
-    
+
+    if (!dayTasks.length) return;
+
+    let totalE = 0;
+    let totalD = 0;
+    let totalQ = 0;
+    let totalG = 0;
+    let totalComposite = 0;
+
+    const scoring = window.PriosScoring;
+    const weights = scoring ? scoring.normalizeWeights(scoring.DEFAULT_WEIGHTS) : { effort: 0.25, duration: 0.25, quality: 0.25, goal: 0.25 };
+
     dayTasks.forEach(task => {
         const taskObj = new Task(task);
         const components = taskObj.getProductivityComponents();
-        
+
         totalE += components.effort;
         totalD += components.duration;
         totalQ += components.quality;
         totalG += components.goal;
+
+        const composite = taskObj.metrics?.composite != null
+            ? taskObj.metrics.composite
+            : scoring
+                ? scoring.computeComposite(components, weights)
+                : (components.effort + components.duration + components.quality + components.goal) / 4;
+
+        totalComposite += composite;
     });
-    
-    // Average the scores
+
     const count = dayTasks.length;
     const avgE = totalE / count;
     const avgD = totalD / count;
     const avgQ = totalQ / count;
     const avgG = totalG / count;
-    
-    // Calculate composite score using default weights
-    const weights = { e: 0.25, d: 0.25, q: 0.25, g: 0.25 };
-    const compositeScore = weights.e * avgE + weights.d * avgD + weights.q * avgQ + weights.g * avgG;
-    
-    // Store in IndexedDB
+
+    const compositeScore = scoring
+        ? scoring.computeComposite({ effort: avgE, duration: avgD, quality: avgQ, goal: avgG }, weights)
+        : totalComposite / count;
+
     const productivityData = {
-        date: date,
+        date,
         week: getWeekNumber(new Date(date)),
         effort: avgE,
         duration: avgD,
         quality: avgQ,
         goal: avgG,
         composite: compositeScore,
-        taskCount: count
+        taskCount: count,
+        weights
     };
-    
+
     const transaction = db.transaction(['productivity_scores'], 'readwrite');
     const store = transaction.objectStore('productivity_scores');
     store.put(productivityData);
-    
+
     console.log(`Productivity score for ${date}: ${compositeScore.toFixed(1)}`);
+}
+ for ${date}: ${compositeScore.toFixed(1)}`);
 }
 
 // UI Functions
@@ -635,7 +688,7 @@ function loadTemplates() {
             id: 1,
             type: 'work',
             title: 'Daily Standup',
-            icon: '👥',
+            icon: '[team]',
             schedule: 'Mon-Fri, 8:30 AM',
             duration: 30,
             priority: 'high',
@@ -645,7 +698,7 @@ function loadTemplates() {
             id: 2,
             type: 'fitness',
             title: 'Gym Workout',
-            icon: '💪',
+            icon: '[fitness]',
             schedule: 'Mon/Wed/Fri, 6:00 PM',
             duration: 90,
             priority: 'medium',
@@ -655,7 +708,7 @@ function loadTemplates() {
             id: 3,
             type: 'learning',
             title: 'Spanish Practice',
-            icon: '📚',
+            icon: '[learning]',
             schedule: 'Daily, 7:00 PM',
             duration: 30,
             priority: 'medium',
@@ -665,7 +718,7 @@ function loadTemplates() {
             id: 4,
             type: 'wellness',
             title: 'Morning Meditation',
-            icon: '🧘',
+            icon: '[calm]',
             schedule: 'Daily, 7:00 AM',
             duration: 15,
             priority: 'low',
@@ -698,7 +751,14 @@ function getAllTasks() {
             const transaction = db.transaction(['tasks'], 'readonly');
             const store = transaction.objectStore('tasks');
             const request = store.getAll();
-            request.onsuccess = () => resolve(request.result || []);
+            request.onsuccess = () => {
+                const result = request.result || [];
+                resolve(result.map(record => {
+                    const task = new Task(record);
+                    task.id = record.id;
+                    return task;
+                }));
+            };
             request.onerror = () => reject(request.error);
         };
         if (!db) ensureDBReady().then(proceed); else proceed();
@@ -711,7 +771,13 @@ function getTaskById(id) {
             const transaction = db.transaction(['tasks'], 'readonly');
             const store = transaction.objectStore('tasks');
             const request = store.get(Number(id));
-            request.onsuccess = () => resolve(request.result || null);
+            request.onsuccess = () => {
+                const record = request.result;
+                if (!record) return resolve(null);
+                const task = new Task(record);
+                task.id = record.id;
+                resolve(task);
+            };
             request.onerror = () => reject(request.error);
         };
         if (!db) ensureDBReady().then(proceed); else proceed();
@@ -724,11 +790,18 @@ function updateTask(updatedTask) {
         const proceed = () => {
             const tx = db.transaction(['tasks'], 'readwrite');
             const store = tx.objectStore('tasks');
-            const req = store.put(updatedTask);
+            const instance = updatedTask instanceof Task ? updatedTask : new Task(updatedTask);
+            instance.id = Number(updatedTask.id);
+            if (window.PriosScoring?.scoreTask) {
+                const scored = window.PriosScoring.scoreTask(instance);
+                instance.metrics = { ...scored.components, composite: scored.composite, weights: scored.weights };
+            }
+            const record = { ...instance };
+            const req = store.put(record);
             req.onsuccess = () => {
                 loadData();
-                calculateDailyProductivity(updatedTask.date);
-                window.dispatchEvent(new CustomEvent('tasks-changed', { detail: { type: 'update', task: updatedTask } }));
+                if (record.date) calculateDailyProductivity(record.date);
+                window.dispatchEvent(new CustomEvent('tasks-changed', { detail: { type: 'update', task: record } }));
                 resolve(true);
             };
             req.onerror = () => reject(req.error);

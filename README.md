@@ -137,6 +137,20 @@ Task Creation → IndexedDB → Scoring Engine → Aggregation → Visualization
 }
 ```
 
+## ⚙️ Scoring Core & Data Flow
+
+- Added `productivity-core.js` as the shared scoring utility so Task Planner, Dashboard, and Analytics use identical normalization and weighting.
+- Tasks now carry contextual metadata (energy, focus mode, collaborators, location, time-of-day, confidence) that feeds directly into the integration pipeline and parallel coordinates.
+- Integration normalizes data via `validateVisualizationPayload` before persisting to `localStorage`, reducing NaNs and mismatched lengths.
+- `JournalNLPParser` extracts richer signals (energy, focus, location, collaborators, context tags) that flow through `TaskAPI` and the visualization stack without manual data entry.
+
+### Next UI Revamp Focus
+
+1. Consolidate the navigation/header components across all pages and surface metadata filters (energy, focus, context) inside the analytics view.
+2. Extend dashboard cards to surface daily context insights (energy balance, collaboration load) alongside productivity metrics.
+3. Refresh planner forms to expose the new metadata fields (energy, focus, collaborators) with sensible defaults and quick-pick chips.
+4. Update reflection and settings surfaces so users can tune NLP sensitivity, context tagging, and scoring weights without editing code.
+
 ## 🚀 Quick Start
 
 ### **1. Launch the System**
