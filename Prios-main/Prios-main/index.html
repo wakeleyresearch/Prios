@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Personal Optimization Tools</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="radar.js"></script>
+  <script src="values.js"></script>
+  <script defer src="priorities.js"></script>
+  <script defer src="main.js"></script>
+</head>
+<body>
+  <header>
+    <h1 id="pageTitle">Radar Charts</h1>
+    <nav>
+      <button onclick="showPage('radars')">Radar Charts</button>
+      <button onclick="showPage('priorities')">Priorities Tool</button>
+    </nav>
+  </header>
+
+  <div id="radars" class="page active">
+    <div class="controls">
+      <label>Dataset:
+        <select id="dataset"></select>
+      </label>
+      <label><input type="checkbox" id="overlay" /> Overlay mode</label>
+      <button id="paretoWalk">Pareto Walkthrough</button>
+      <button id="highlightPareto">Highlight Pareto Set</button>
+    </div>
+    <div id="grid" class="grid"></div>
+  </div>
+  <div id="valuesTool"></div>
+  <div id="priorities" class="page">
+    <h2>Set Your Personal Priorities</h2>
+    <label>Total Budget: <input type="number" id="totalBudget" value="10" min="1"></label>
+    <div id="priorityInputs"></div>
+    <button id="addPriority">Add Priority</button>
+    <button id="resetDefaults">Reset</button>
+    <button id="addSet">Add Another Set</button>
+    <label><input type="checkbox" id="overlayPriorities" /> Overlay mode</label>
+    <button id="generate">Generate Chart(s)</button>
+    <div id="priorityCharts" class="grid"></div>
+  </div>
+
+  <div id="legendTip"></div>
+</body>
+</html>
