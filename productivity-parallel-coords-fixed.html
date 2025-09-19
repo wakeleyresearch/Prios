@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Productivity Analysis • Prios</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #888888;
+            --border-color: #2a2a2a;
+            --accent: #667eea;
+            --success: #48bb78;
+            --warning: #ed8936;
+            --danger: #f56565;
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .header-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .brand {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .links a:hover, .links a.active {
+            color: var(--text-primary);
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+
+        /* Controls Panel */
+        .controls-panel {
+            width: 300px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .control-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .control-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 4px;
+            background: var(--border-color);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .slider-value {
+            min-width: 40px;
+            text-align: right;
+            color: var(--text-primary);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-secondary {
+            background: var(--border-color);
+        }
+
+        select {
+            width: 100%;
+            padding: 0.5rem;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            cursor: pointer;
+        }
+
+        /* Main Chart Area */
+        .chart-container {
+            flex: 1;
+            position: relative;
+            padding: 1rem;
+        }
+
+        #parallelChart {
+            width: 100%;
+            height: 80%;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 2rem;
+            background: rgba(26, 26, 26, 0.9);
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 300;
+            color: var(--text-primary);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-top: 0.25rem;
+        }
+
+        /* Legend */
+        .legend {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            background: rgba(26, 26, 26, 0.9);
+            padding: 1rem;
+            border-radius: 0.375rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 3px;
+        }
+
+        .legend-text {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        /* Patterns Modal */
+        .patterns-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 2rem;
+            max-width: 500px;
+            max-height: 70vh;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .patterns-modal.active {
+            display: block;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 999;
+        }
+
+        .modal-overlay.active {
+            display: block;
+        }
+
+        .pattern-item {
+            padding: 1rem;
+            background: var(--bg-primary);
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+        }
+
+        .pattern-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--accent);
+        }
+
+        .pattern-description {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .close-modal {
+            float: right;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-nav">
+        <div class="brand">Prios</div>
+        <div class="links">
+            <a href="index.html">Home</a>
+            <a href="dashboard.html">Dashboard</a>
+            <a href="todo-list.html">To-Do</a>
+            <a href="task-planner-enhanced.html">Planner</a>
+            <a href="productivity-parallel-coords.html" class="active">Analytics</a>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="controls-panel">
+            <div class="control-group">
+                <label class="control-label">Task Priority Filter</label>
+                <div class="slider-container">
+                    <span style="color: var(--text-secondary);">Low</span>
+                    <input type="range" id="prioritySlider" min="0" max="100" value="50" step="1">
+                    <span style="color: var(--text-secondary);">High</span>
+                </div>
+                <div style="text-align: center; margin-top: 0.5rem;">
+                    <span id="priorityValue" style="color: var(--text-primary);">All Tasks</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label">Weight Calculation</label>
+                <select id="weightMethod">
+                    <option value="equal">Equal Weights</option>
+                    <option value="performance">Performance-Based</option>
+                    <option value="bayes">Bayesian Optimization</option>
+                    <option value="entropy">Maximum Entropy</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label">Components</label>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <div class="slider-container">
+                        <span style="min-width: 60px;">Effort</span>
+                        <input type="range" id="effortWeight" min="0" max="100" value="20">
+                        <span class="slider-value">20%</span>
+                    </div>
+                    <div class="slider-container">
+                        <span style="min-width: 60px;">Duration</span>
+                        <input type="range" id="durationWeight" min="0" max="100" value="20">
+                        <span class="slider-value">20%</span>
+                    </div>
+                    <div class="slider-container">
+                        <span style="min-width: 60px;">Quality</span>
+                        <input type="range" id="qualityWeight" min="0" max="100" value="25">
+                        <span class="slider-value">25%</span>
+                    </div>
+                    <div class="slider-container">
+                        <span style="min-width: 60px;">Goals</span>
+                        <input type="range" id="goalsWeight" min="0" max="100" value="20">
+                        <span class="slider-value">20%</span>
+                    </div>
+                    <div class="slider-container">
+                        <span style="min-width: 60px;">Rhythm</span>
+                        <input type="range" id="rhythmWeight" min="0" max="100" value="15">
+                        <span class="slider-value">15%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <button class="btn" onclick="detectAnomalies()">Detect Anomalies</button>
+            </div>
+
+            <div class="control-group">
+                <button class="btn btn-secondary" onclick="detectPatterns()">Detect Patterns</button>
+            </div>
+
+            <div class="control-group">
+                <button class="btn btn-secondary" onclick="resetFilters()">Reset All</button>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div id="parallelChart"></div>
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f56565;"></div>
+                    <span class="legend-text">High Priority</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ed8936;"></div>
+                    <span class="legend-text">Medium Priority</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #48bb78;"></div>
+                    <span class="legend-text">Low Priority</span>
+                </div>
+            </div>
+
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <div class="stat-value" id="avgScore">--</div>
+                    <div class="stat-label">Avg Score</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="cronbachAlpha">--</div>
+                    <div class="stat-label">Cronbach's α</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="taskCount">--</div>
+                    <div class="stat-label">Tasks</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="consistency">--</div>
+                    <div class="stat-label">Consistency</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patterns Modal -->
+    <div class="modal-overlay" onclick="closePatterns()"></div>
+    <div class="patterns-modal" id="patternsModal">
+        <button class="close-modal" onclick="closePatterns()">×</button>
+        <h2 style="margin-bottom: 1rem;">Detected Patterns</h2>
+        <div id="patternsContent"></div>
+    </div>
+
+    <script>
+        let chart = null;
+        let allTaskData = [];
+        let filteredData = [];
+        let currentWeights = { effort: 0.20, duration: 0.20, quality: 0.25, goals: 0.20, rhythm: 0.15 };
+
+        // Initialize
+        function init() {
+            const chartDom = document.getElementById('parallelChart');
+            chart = echarts.init(chartDom, null, { renderer: 'canvas' });
+            
+            generateRealisticData();
+            setupEventListeners();
+            updateChart();
+            updateStatistics();
+        }
+
+        // Generate realistic task data with varied priorities
+        function generateRealisticData() {
+            allTaskData = [];
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const taskNames = [
+                'Team Standup', 'Code Review', 'Feature Development', 'Bug Fixing',
+                'Documentation', 'Email Responses', 'Planning Session', 'Testing',
+                'Client Meeting', 'Research', 'Deployment', 'Training',
+                'Break/Lunch', 'Admin Tasks', 'Quick Sync', 'Report Writing'
+            ];
+            
+            // Generate tasks with realistic priority distribution
+            // 20% high priority, 50% medium, 30% low
+            for (let i = 0; i < 150; i++) {
+                const rand = Math.random();
+                let priority, priorityValue, baseScore;
+                
+                if (rand < 0.2) {
+                    priority = 'high';
+                    priorityValue = 70 + Math.random() * 30; // 70-100
+                    baseScore = 60 + Math.random() * 30; // 60-90
+                } else if (rand < 0.7) {
+                    priority = 'medium';
+                    priorityValue = 30 + Math.random() * 40; // 30-70
+                    baseScore = 40 + Math.random() * 30; // 40-70
+                } else {
+                    priority = 'low';
+                    priorityValue = Math.random() * 30; // 0-30
+                    baseScore = 20 + Math.random() * 30; // 20-50
+                }
+                
+                const taskName = taskNames[Math.floor(Math.random() * taskNames.length)];
+                
+                // Generate scores for each day with rhythm pattern
+                const scores = days.map((day, index) => {
+                    let dayMultiplier = 1.0;
+                    
+                    // Weekday vs weekend pattern
+                    if (index === 0 || index === 6) {
+                        dayMultiplier = priority === 'low' ? 0.9 : 0.7; // Less work on weekends
+                    } else if (index === 1 || index === 5) {
+                        dayMultiplier = 0.85; // Monday/Friday slightly lower
+                    } else {
+                        dayMultiplier = 1.0; // Peak midweek
+                    }
+                    
+                    // Add components
+                    const effort = baseScore + (Math.random() - 0.5) * 20;
+                    const duration = baseScore + (Math.random() - 0.5) * 15;
+                    const quality = baseScore + (Math.random() - 0.5) * 25;
+                    const goals = baseScore + (Math.random() - 0.5) * 20;
+                    const rhythm = 50 + Math.sin((index / 6) * Math.PI * 2) * 20 + (Math.random() - 0.5) * 10;
+                    
+                    // Calculate composite score
+                    const composite = 
+                        effort * currentWeights.effort +
+                        duration * currentWeights.duration +
+                        quality * currentWeights.quality +
+                        goals * currentWeights.goals +
+                        rhythm * currentWeights.rhythm;
+                    
+                    return Math.max(0, Math.min(100, composite * dayMultiplier));
+                });
+                
+                allTaskData.push({
+                    name: taskName,
+                    priority: priority,
+                    priorityValue: priorityValue,
+                    scores: scores,
+                    effort: baseScore + (Math.random() - 0.5) * 10,
+                    duration: baseScore + (Math.random() - 0.5) * 10,
+                    quality: baseScore + (Math.random() - 0.5) * 10,
+                    goals: baseScore + (Math.random() - 0.5) * 10,
+                    rhythm: 50 + (Math.random() - 0.5) * 20
+                });
+            }
+            
+            filteredData = [...allTaskData];
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Priority slider
+            document.getElementById('prioritySlider').addEventListener('input', (e) => {
+                filterByPriority(parseInt(e.target.value));
+            });
+            
+            // Weight method selector
+            document.getElementById('weightMethod').addEventListener('change', (e) => {
+                applyWeightMethod(e.target.value);
+            });
+            
+            // Component weight sliders
+            ['effort', 'duration', 'quality', 'goals', 'rhythm'].forEach(component => {
+                const slider = document.getElementById(component + 'Weight');
+                slider.addEventListener('input', (e) => {
+                    const value = parseInt(e.target.value);
+                    slider.nextElementSibling.textContent = value + '%';
+                    updateWeights();
+                });
+            });
+        }
+
+        // Filter tasks by priority
+        function filterByPriority(value) {
+            const priorityLabel = document.getElementById('priorityValue');
+            
+            if (value < 33) {
+                filteredData = allTaskData.filter(task => task.priority === 'low');
+                priorityLabel.textContent = 'Low Priority Tasks';
+            } else if (value < 67) {
+                filteredData = allTaskData.filter(task => task.priority === 'medium');
+                priorityLabel.textContent = 'Medium Priority Tasks';
+            } else if (value < 95) {
+                filteredData = allTaskData.filter(task => task.priority === 'high');
+                priorityLabel.textContent = 'High Priority Tasks';
+            } else {
+                filteredData = [...allTaskData];
+                priorityLabel.textContent = 'All Tasks';
+            }
+            
+            updateChart();
+            updateStatistics();
+        }
+
+        // Apply different weight calculation methods
+        function applyWeightMethod(method) {
+            switch(method) {
+                case 'equal':
+                    setWeights(20, 20, 20, 20, 20);
+                    break;
+                case 'performance':
+                    // Weight based on historical performance
+                    setWeights(15, 20, 30, 25, 10);
+                    break;
+                case 'bayes':
+                    // Bayesian optimization (simulated)
+                    bayesianOptimization();
+                    break;
+                case 'entropy':
+                    // Maximum entropy weights
+                    setWeights(18, 22, 24, 19, 17);
+                    break;
+            }
+        }
+
+        // Bayesian optimization simulation
+        function bayesianOptimization() {
+            // Simulate Bayesian optimization by testing different weight combinations
+            let bestWeights = { ...currentWeights };
+            let bestScore = calculateOverallScore(currentWeights);
+            
+            // Try 20 iterations
+            for (let i = 0; i < 20; i++) {
+                const testWeights = {
+                    effort: Math.random() * 30 + 10,
+                    duration: Math.random() * 30 + 10,
+                    quality: Math.random() * 30 + 10,
+                    goals: Math.random() * 30 + 10,
+                    rhythm: Math.random() * 30 + 10
+                };
+                
+                // Normalize
+                const sum = Object.values(testWeights).reduce((a, b) => a + b, 0);
+                for (let key in testWeights) {
+                    testWeights[key] = testWeights[key] / sum;
+                }
+                
+                const score = calculateOverallScore(testWeights);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestWeights = { ...testWeights };
+                }
+            }
+            
+            // Apply best weights
+            setWeights(
+                bestWeights.effort * 100,
+                bestWeights.duration * 100,
+                bestWeights.quality * 100,
+                bestWeights.goals * 100,
+                bestWeights.rhythm * 100
+            );
+        }
+
+        // Calculate overall score for optimization
+        function calculateOverallScore(weights) {
+            let totalScore = 0;
+            filteredData.forEach(task => {
+                const score = 
+                    task.effort * weights.effort +
+                    task.duration * weights.duration +
+                    task.quality * weights.quality +
+                    task.goals * weights.goals +
+                    task.rhythm * weights.rhythm;
+                totalScore += score;
+            });
+            return totalScore / filteredData.length;
+        }
+
+        // Set weight values
+        function setWeights(e, d, q, g, r) {
+            document.getElementById('effortWeight').value = e;
+            document.getElementById('durationWeight').value = d;
+            document.getElementById('qualityWeight').value = q;
+            document.getElementById('goalsWeight').value = g;
+            document.getElementById('rhythmWeight').value = r;
+            
+            document.getElementById('effortWeight').nextElementSibling.textContent = Math.round(e) + '%';
+            document.getElementById('durationWeight').nextElementSibling.textContent = Math.round(d) + '%';
+            document.getElementById('qualityWeight').nextElementSibling.textContent = Math.round(q) + '%';
+            document.getElementById('goalsWeight').nextElementSibling.textContent = Math.round(g) + '%';
+            document.getElementById('rhythmWeight').nextElementSibling.textContent = Math.round(r) + '%';
+            
+            updateWeights();
+        }
+
+        // Update weights from sliders
+        function updateWeights() {
+            const effort = parseInt(document.getElementById('effortWeight').value);
+            const duration = parseInt(document.getElementById('durationWeight').value);
+            const quality = parseInt(document.getElementById('qualityWeight').value);
+            const goals = parseInt(document.getElementById('goalsWeight').value);
+            const rhythm = parseInt(document.getElementById('rhythmWeight').value);
+            
+            const sum = effort + duration + quality + goals + rhythm;
+            
+            currentWeights = {
+                effort: effort / sum,
+                duration: duration / sum,
+                quality: quality / sum,
+                goals: goals / sum,
+                rhythm: rhythm / sum
+            };
+            
+            // Recalculate scores
+            recalculateScores();
+            updateChart();
+            updateStatistics();
+        }
+
+        // Recalculate scores based on new weights
+        function recalculateScores() {
+            filteredData.forEach(task => {
+                task.scores = task.scores.map((_, index) => {
+                    const dayMultiplier = (index === 0 || index === 6) ? 0.8 : 1.0;
+                    
+                    const score = 
+                        task.effort * currentWeights.effort +
+                        task.duration * currentWeights.duration +
+                        task.quality * currentWeights.quality +
+                        task.goals * currentWeights.goals +
+                        task.rhythm * currentWeights.rhythm;
+                    
+                    return Math.max(0, Math.min(100, score * dayMultiplier));
+                });
+            });
+        }
+
+        // Update chart
+        function updateChart() {
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            
+            const option = {
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function(params) {
+                        const task = filteredData[params.dataIndex];
+                        const dayIndex = params.data.findIndex(v => v === params.value);
+                        const score = params.value.toFixed(1);
+                        
+                        // Provide meaningful feedback based on priority and score
+                        let feedback = '';
+                        if (task.priority === 'high' && score > 70) {
+                            feedback = 'Excellent performance on high priority task!';
+                        } else if (task.priority === 'high' && score < 50) {
+                            feedback = 'High priority task needs attention';
+                        } else if (task.priority === 'low' && score > 70) {
+                            feedback = 'Consider reallocating effort from low priority task';
+                        } else if (task.priority === 'low' && score < 40) {
+                            feedback = 'Appropriate minimal effort on low priority';
+                        } else {
+                            feedback = 'Balanced performance';
+                        }
+                        
+                        return `<strong>${task.name}</strong><br/>
+                                Day: ${days[dayIndex]}<br/>
+                                Priority: ${task.priority}<br/>
+                                Score: ${score}<br/>
+                                <em>${feedback}</em>`;
+                    }
+                },
+                parallelAxis: days.map((day, index) => ({
+                    dim: index,
+                    name: day,
+                    type: 'value',
+                    min: 0,
+                    max: 100,
+                    nameTextStyle: {
+                        color: '#888',
+                        fontSize: 12
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#2a2a2a'
+                        }
+                    },
+                    axisTick: {
+                        show: false
+                    },
+                    splitLine: {
+                        show: true,
+                        lineStyle: {
+                            color: '#1a1a1a',
+                            type: 'dashed'
+                        }
+                    },
+                    axisLabel: {
+                        color: '#444',
+                        fontSize: 10
+                    }
+                })),
+                parallel: {
+                    left: '10%',
+                    right: '10%',
+                    bottom: '20%',
+                    top: '10%'
+                },
+                series: [{
+                    type: 'parallel',
+                    lineStyle: {
+                        width: 1.5,
+                        opacity: 0.6
+                    },
+                    data: filteredData.map(task => ({
+                        value: task.scores,
+                        lineStyle: {
+                            color: task.priority === 'high' ? '#f56565' :
+                                   task.priority === 'medium' ? '#ed8936' : '#48bb78'
+                        }
+                    }))
+                }]
+            };
+            
+            chart.setOption(option);
+        }
+
+        // Update statistics
+        function updateStatistics() {
+            // Calculate average score
+            let totalScore = 0;
+            let count = 0;
+            
+            filteredData.forEach(task => {
+                task.scores.forEach(score => {
+                    totalScore += score;
+                    count++;
+                });
+            });
+            
+            const avgScore = count > 0 ? (totalScore / count).toFixed(1) : '--';
+            document.getElementById('avgScore').textContent = avgScore;
+            
+            // Calculate Cronbach's Alpha
+            const alpha = calculateCronbachAlpha();
+            document.getElementById('cronbachAlpha').textContent = alpha.toFixed(3);
+            
+            // Task count
+            document.getElementById('taskCount').textContent = filteredData.length;
+            
+            // Calculate consistency
+            const consistency = calculateConsistency();
+            document.getElementById('consistency').textContent = consistency.toFixed(0) + '%';
+        }
+
+        // Calculate Cronbach's Alpha
+        function calculateCronbachAlpha() {
+            if (filteredData.length === 0) return 0;
+            
+            const k = 7; // Number of days
+            const n = filteredData.length;
+            
+            // Calculate item variances (for each day)
+            let sumItemVariances = 0;
+            for (let day = 0; day < k; day++) {
+                const dayScores = filteredData.map(task => task.scores[day]);
+                const mean = dayScores.reduce((a, b) => a + b, 0) / n;
+                const variance = dayScores.reduce((sum, score) => sum + Math.pow(score - mean, 2), 0) / n;
+                sumItemVariances += variance;
+            }
+            
+            // Calculate total variance
+            const allScores = [];
+            filteredData.forEach(task => {
+                const taskTotal = task.scores.reduce((a, b) => a + b, 0);
+                allScores.push(taskTotal);
+            });
+            
+            const totalMean = allScores.reduce((a, b) => a + b, 0) / n;
+            const totalVariance = allScores.reduce((sum, total) => sum + Math.pow(total - totalMean, 2), 0) / n;
+            
+            // Cronbach's alpha formula
+            if (totalVariance === 0) return 0;
+            const alpha = (k / (k - 1)) * (1 - sumItemVariances / totalVariance);
+            
+            return Math.max(0, Math.min(1, alpha));
+        }
+
+        // Calculate consistency
+        function calculateConsistency() {
+            if (filteredData.length === 0) return 0;
+            
+            let totalVariance = 0;
+            let count = 0;
+            
+            filteredData.forEach(task => {
+                const mean = task.scores.reduce((a, b) => a + b, 0) / task.scores.length;
+                const variance = task.scores.reduce((sum, score) => sum + Math.pow(score - mean, 2), 0) / task.scores.length;
+                totalVariance += variance;
+                count++;
+            });
+            
+            const avgVariance = totalVariance / count;
+            const consistency = Math.max(0, Math.min(100, 100 - avgVariance));
+            
+            return consistency;
+        }
+
+        // Detect anomalies
+        function detectAnomalies() {
+            const anomalies = [];
+            
+            filteredData.forEach((task, index) => {
+                // Calculate z-scores for each day
+                task.scores.forEach((score, day) => {
+                    const dayScores = filteredData.map(t => t.scores[day]);
+                    const mean = dayScores.reduce((a, b) => a + b, 0) / dayScores.length;
+                    const stdDev = Math.sqrt(dayScores.reduce((sum, s) => sum + Math.pow(s - mean, 2), 0) / dayScores.length);
+                    
+                    const zScore = Math.abs((score - mean) / (stdDev || 1));
+                    
+                    if (zScore > 2.5) {
+                        anomalies.push({
+                            task: task.name,
+                            day: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][day],
+                            score: score.toFixed(1),
+                            zScore: zScore.toFixed(2),
+                            type: score > mean ? 'Overperforming' : 'Underperforming'
+                        });
+                    }
+                });
+            });
+            
+            // Display anomalies
+            if (anomalies.length > 0) {
+                showPatterns('Detected Anomalies', anomalies.map(a => ({
+                    title: `${a.task} - ${a.day}`,
+                    description: `${a.type}: Score ${a.score} (Z-score: ${a.zScore})`
+                })));
+            } else {
+                showPatterns('Anomaly Detection', [{
+                    title: 'No anomalies detected',
+                    description: 'All tasks are performing within normal ranges'
+                }]);
+            }
+        }
+
+        // Detect patterns
+        function detectPatterns() {
+            const patterns = [];
+            
+            // Pattern 1: Weekend drop
+            let weekendDrop = 0;
+            let weekdayAvg = 0;
+            
+            filteredData.forEach(task => {
+                const weekendAvg = (task.scores[0] + task.scores[6]) / 2;
+                const weekdayAvgTask = (task.scores[1] + task.scores[2] + task.scores[3] + task.scores[4] + task.scores[5]) / 5;
+                
+                if (weekdayAvgTask > weekendAvg * 1.2) {
+                    weekendDrop++;
+                }
+                weekdayAvg += weekdayAvgTask;
+            });
+            
+            if (weekendDrop > filteredData.length * 0.6) {
+                patterns.push({
+                    title: 'Weekend Productivity Drop',
+                    description: `${Math.round(weekendDrop / filteredData.length * 100)}% of tasks show lower weekend productivity`
+                });
+            }
+            
+            // Pattern 2: Mid-week peak
+            let midWeekPeak = 0;
+            filteredData.forEach(task => {
+                const midWeek = (task.scores[2] + task.scores[3] + task.scores[4]) / 3;
+                const weekAvg = task.scores.reduce((a, b) => a + b, 0) / 7;
+                
+                if (midWeek > weekAvg * 1.1) {
+                    midWeekPeak++;
+                }
+            });
+            
+            if (midWeekPeak > filteredData.length * 0.5) {
+                patterns.push({
+                    title: 'Mid-Week Performance Peak',
+                    description: 'Productivity peaks on Tuesday through Thursday'
+                });
+            }
+            
+            // Pattern 3: Priority alignment
+            const highPriorityTasks = filteredData.filter(t => t.priority === 'high');
+            const lowPriorityTasks = filteredData.filter(t => t.priority === 'low');
+            
+            if (highPriorityTasks.length > 0 && lowPriorityTasks.length > 0) {
+                const highAvg = highPriorityTasks.reduce((sum, t) => sum + t.scores.reduce((a, b) => a + b, 0) / 7, 0) / highPriorityTasks.length;
+                const lowAvg = lowPriorityTasks.reduce((sum, t) => sum + t.scores.reduce((a, b) => a + b, 0) / 7, 0) / lowPriorityTasks.length;
+                
+                if (highAvg > lowAvg * 1.3) {
+                    patterns.push({
+                        title: 'Good Priority Alignment',
+                        description: 'High priority tasks receiving appropriate focus'
+                    });
+                } else if (lowAvg > highAvg * 0.8) {
+                    patterns.push({
+                        title: 'Priority Misalignment Warning',
+                        description: 'Low priority tasks consuming disproportionate effort'
+                    });
+                }
+            }
+            
+            // Pattern 4: Consistency patterns
+            const consistentTasks = filteredData.filter(task => {
+                const mean = task.scores.reduce((a, b) => a + b, 0) / task.scores.length;
+                const variance = task.scores.reduce((sum, score) => sum + Math.pow(score - mean, 2), 0) / task.scores.length;
+                return variance < 100;
+            });
+            
+            if (consistentTasks.length > filteredData.length * 0.7) {
+                patterns.push({
+                    title: 'High Consistency',
+                    description: 'Most tasks show stable performance throughout the week'
+                });
+            }
+            
+            // Show patterns
+            showPatterns('Detected Patterns', patterns);
+        }
+
+        // Show patterns in modal
+        function showPatterns(title, patterns) {
+            const modal = document.getElementById('patternsModal');
+            const overlay = document.querySelector('.modal-overlay');
+            const content = document.getElementById('patternsContent');
+            
+            content.innerHTML = '';
+            
+            patterns.forEach(pattern => {
+                const item = document.createElement('div');
+                item.className = 'pattern-item';
+                item.innerHTML = `
+                    <div class="pattern-title">${pattern.title}</div>
+                    <div class="pattern-description">${pattern.description}</div>
+                `;
+                content.appendChild(item);
+            });
+            
+            modal.classList.add('active');
+            overlay.classList.add('active');
+        }
+
+        // Close patterns modal
+        function closePatterns() {
+            document.getElementById('patternsModal').classList.remove('active');
+            document.querySelector('.modal-overlay').classList.remove('active');
+        }
+
+        // Reset all filters
+        function resetFilters() {
+            document.getElementById('prioritySlider').value = 50;
+            document.getElementById('priorityValue').textContent = 'All Tasks';
+            document.getElementById('weightMethod').value = 'equal';
+            setWeights(20, 20, 20, 20, 20);
+            filteredData = [...allTaskData];
+            updateChart();
+            updateStatistics();
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', init);
+
+        // Handle resize
+        window.addEventListener('resize', () => {
+            if (chart) {
+                chart.resize();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Planner • Prios</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: #252525;
+            --text-primary: #ffffff;
+            --text-secondary: #888888;
+            --border-color: #2a2a2a;
+            --accent: #667eea;
+            --success: #48bb78;
+            --warning: #ed8936;
+            --danger: #f56565;
+            --hover-bg: rgba(102, 126, 234, 0.1);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .brand {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .links a:hover, .links a.active {
+            color: var(--text-primary);
+        }
+
+        /* Main Layout */
+        .planner-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Controls Bar */
+        .controls-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .view-btn {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .view-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .time-range-selector {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .time-range-selector select {
+            padding: 0.5rem;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            cursor: pointer;
+        }
+
+        .add-task-btn {
+            padding: 0.5rem 1.5rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .add-task-btn:hover {
+            opacity: 0.9;
+        }
+
+        /* Calendar Grid */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: 80px repeat(7, 1fr);
+            gap: 1px;
+            background: var(--border-color);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+
+        .time-label {
+            background: var(--bg-secondary);
+            padding: 0.5rem;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .day-header {
+            background: var(--bg-secondary);
+            padding: 1rem;
+            text-align: center;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .day-header.today {
+            background: var(--accent);
+            color: white;
+        }
+
+        .time-slot {
+            background: var(--bg-primary);
+            min-height: 60px;
+            padding: 0.25rem;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .time-slot:hover {
+            background: var(--hover-bg);
+        }
+
+        .task-block {
+            background: var(--bg-tertiary);
+            border-left: 3px solid var(--accent);
+            border-radius: 0.25rem;
+            padding: 0.5rem;
+            margin: 0.25rem;
+            cursor: move;
+            transition: all 0.2s;
+        }
+
+        .task-block:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .task-block.high-priority {
+            border-left-color: var(--danger);
+        }
+
+        .task-block.medium-priority {
+            border-left-color: var(--warning);
+        }
+
+        .task-block.low-priority {
+            border-left-color: var(--success);
+        }
+
+        .task-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .task-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .task-actions {
+            position: absolute;
+            top: 0.25rem;
+            right: 0.25rem;
+            display: none;
+            gap: 0.25rem;
+        }
+
+        .task-block:hover .task-actions {
+            display: flex;
+        }
+
+        .task-action-btn {
+            width: 20px;
+            height: 20px;
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s;
+        }
+
+        .task-action-btn:hover {
+            opacity: 0.8;
+        }
+
+        .edit-btn {
+            background: var(--accent);
+            color: white;
+        }
+
+        .delete-btn {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 2rem;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            font-size: 1rem;
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: opacity 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: flex;
+            gap: 2rem;
+            margin-top: 2rem;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-item {
+            flex: 1;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        /* Day View */
+        .day-view {
+            display: none;
+        }
+
+        .day-view.active {
+            display: block;
+        }
+
+        .day-schedule {
+            background: var(--bg-secondary);
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        .hour-row {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .hour-row:last-child {
+            border-bottom: none;
+        }
+
+        .hour-label {
+            width: 100px;
+            padding: 1rem;
+            background: var(--bg-primary);
+            color: var(--text-secondary);
+            text-align: center;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .hour-content {
+            flex: 1;
+            padding: 0.5rem;
+            min-height: 80px;
+            position: relative;
+        }
+
+        .current-time-indicator {
+            position: absolute;
+            left: 100px;
+            right: 0;
+            height: 2px;
+            background: var(--danger);
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .current-time-indicator::before {
+            content: '';
+            position: absolute;
+            left: -6px;
+            top: -4px;
+            width: 10px;
+            height: 10px;
+            background: var(--danger);
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-nav">
+        <div class="brand">Prios</div>
+        <div class="links">
+            <a href="index.html">Home</a>
+            <a href="dashboard.html">Dashboard</a>
+            <a href="todo-list.html">To-Do</a>
+            <a href="task-planner-enhanced.html" class="active">Planner</a>
+            <a href="productivity-parallel-coords.html">Analytics</a>
+        </div>
+    </div>
+
+    <div class="planner-container">
+        <!-- Controls Bar -->
+        <div class="controls-bar">
+            <div class="view-toggle">
+                <button class="view-btn active" onclick="switchView('week')">Week</button>
+                <button class="view-btn" onclick="switchView('day')">Day</button>
+            </div>
+            
+            <div class="time-range-selector">
+                <label style="color: var(--text-secondary);">Time Range:</label>
+                <select id="timeRangeStart">
+                    <option value="6">6:00 AM</option>
+                    <option value="7">7:00 AM</option>
+                    <option value="8" selected>8:00 AM</option>
+                    <option value="9">9:00 AM</option>
+                </select>
+                <span style="color: var(--text-secondary);">to</span>
+                <select id="timeRangeEnd">
+                    <option value="17">5:00 PM</option>
+                    <option value="18" selected>6:00 PM</option>
+                    <option value="19">7:00 PM</option>
+                    <option value="20">8:00 PM</option>
+                    <option value="21">9:00 PM</option>
+                    <option value="22">10:00 PM</option>
+                </select>
+            </div>
+            
+            <button class="add-task-btn" onclick="openTaskModal()">+ Add Task</button>
+        </div>
+
+        <!-- Week View -->
+        <div class="week-view active" id="weekView">
+            <div class="calendar-grid" id="calendarGrid">
+                <!-- Generated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Day View -->
+        <div class="day-view" id="dayView">
+            <div class="day-schedule" id="daySchedule">
+                <!-- Generated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-value" id="totalTasks">0</div>
+                <div class="stat-label">Total Tasks</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="completedTasks">0</div>
+                <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="productivityScore">0</div>
+                <div class="stat-label">Productivity Score</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="focusHours">0h</div>
+                <div class="stat-label">Focus Hours</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Modal -->
+    <div class="modal" id="taskModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Add Task</h2>
+                <button class="close-btn" onclick="closeTaskModal()">×</button>
+            </div>
+            
+            <form id="taskForm">
+                <div class="form-group">
+                    <label class="form-label">Task Title</label>
+                    <input type="text" class="form-input" id="taskTitle" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-textarea" id="taskDescription"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Day</label>
+                        <select class="form-select" id="taskDay">
+                            <option value="0">Sunday</option>
+                            <option value="1">Monday</option>
+                            <option value="2">Tuesday</option>
+                            <option value="3">Wednesday</option>
+                            <option value="4">Thursday</option>
+                            <option value="5">Friday</option>
+                            <option value="6">Saturday</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Time</label>
+                        <input type="time" class="form-input" id="taskTime" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Duration</label>
+                        <select class="form-select" id="taskDuration">
+                            <option value="30">30 min</option>
+                            <option value="60" selected>1 hour</option>
+                            <option value="90">1.5 hours</option>
+                            <option value="120">2 hours</option>
+                            <option value="180">3 hours</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Priority</label>
+                        <select class="form-select" id="taskPriority">
+                            <option value="high">High</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="low">Low</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeTaskModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let tasks = [];
+        let currentView = 'week';
+        let currentEditingTask = null;
+        let startHour = 8;
+        let endHour = 18;
+
+        // Initialize
+        function init() {
+            loadTasks();
+            renderWeekView();
+            updateStats();
+            updateCurrentTimeIndicator();
+            
+            // Update time indicator every minute
+            setInterval(updateCurrentTimeIndicator, 60000);
+            
+            // Setup form submission
+            document.getElementById('taskForm').addEventListener('submit', saveTask);
+            
+            // Setup time range change listeners
+            document.getElementById('timeRangeStart').addEventListener('change', updateTimeRange);
+            document.getElementById('timeRangeEnd').addEventListener('change', updateTimeRange);
+        }
+
+        // Load tasks from localStorage
+        function loadTasks() {
+            const stored = localStorage.getItem('priosTasks');
+            if (stored) {
+                tasks = JSON.parse(stored);
+            } else {
+                // Generate some sample tasks
+                generateSampleTasks();
+            }
+        }
+
+        // Generate sample tasks
+        function generateSampleTasks() {
+            const sampleTasks = [
+                { id: 1, title: 'Team Standup', day: 1, time: '09:00', duration: 30, priority: 'high', description: 'Daily sync with team' },
+                { id: 2, title: 'Code Review', day: 1, time: '10:00', duration: 60, priority: 'medium', description: 'Review pull requests' },
+                { id: 3, title: 'Feature Development', day: 1, time: '14:00', duration: 120, priority: 'high', description: 'Work on new feature' },
+                { id: 4, title: 'Documentation', day: 2, time: '10:00', duration: 90, priority: 'low', description: 'Update API docs' },
+                { id: 5, title: 'Client Meeting', day: 3, time: '15:00', duration: 60, priority: 'high', description: 'Project status update' },
+                { id: 6, title: 'Testing', day: 4, time: '11:00', duration: 120, priority: 'medium', description: 'QA testing' },
+                { id: 7, title: 'Planning Session', day: 5, time: '09:00', duration: 90, priority: 'high', description: 'Sprint planning' }
+            ];
+            
+            tasks = sampleTasks;
+            saveTasks();
+        }
+
+        // Save tasks to localStorage
+        function saveTasks() {
+            localStorage.setItem('priosTasks', JSON.stringify(tasks));
+        }
+
+        // Switch between week and day view
+        function switchView(view) {
+            currentView = view;
+            
+            document.querySelectorAll('.view-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            if (view === 'week') {
+                document.getElementById('weekView').classList.add('active');
+                document.getElementById('dayView').classList.remove('active');
+                renderWeekView();
+            } else {
+                document.getElementById('weekView').classList.remove('active');
+                document.getElementById('dayView').classList.add('active');
+                renderDayView(new Date().getDay());
+            }
+        }
+
+        // Update time range
+        function updateTimeRange() {
+            startHour = parseInt(document.getElementById('timeRangeStart').value);
+            endHour = parseInt(document.getElementById('timeRangeEnd').value);
+            
+            if (currentView === 'week') {
+                renderWeekView();
+            } else {
+                renderDayView(new Date().getDay());
+            }
+        }
+
+        // Render week view
+        function renderWeekView() {
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+            
+            // Add corner cell
+            const corner = document.createElement('div');
+            corner.className = 'time-label';
+            corner.style.background = 'var(--bg-secondary)';
+            grid.appendChild(corner);
+            
+            // Add day headers
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const today = new Date().getDay();
+            
+            days.forEach((day, index) => {
+                const header = document.createElement('div');
+                header.className = 'day-header';
+                if (index === today) {
+                    header.classList.add('today');
+                }
+                header.textContent = day;
+                grid.appendChild(header);
+            });
+            
+            // Add time slots
+            for (let hour = startHour; hour <= endHour; hour++) {
+                // Time label
+                const timeLabel = document.createElement('div');
+                timeLabel.className = 'time-label';
+                timeLabel.textContent = formatHour(hour);
+                grid.appendChild(timeLabel);
+                
+                // Day slots
+                for (let day = 0; day < 7; day++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'time-slot';
+                    slot.dataset.day = day;
+                    slot.dataset.hour = hour;
+                    slot.onclick = () => quickAddTask(day, hour);
+                    
+                    // Add tasks for this slot
+                    const slotTasks = tasks.filter(task => 
+                        task.day === day && 
+                        parseInt(task.time.split(':')[0]) === hour
+                    );
+                    
+                    slotTasks.forEach(task => {
+                        const taskEl = createTaskElement(task);
+                        slot.appendChild(taskEl);
+                    });
+                    
+                    grid.appendChild(slot);
+                }
+            }
+        }
+
+        // Render day view
+        function renderDayView(dayIndex) {
+            const schedule = document.getElementById('daySchedule');
+            schedule.innerHTML = '';
+            
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const dayHeader = document.createElement('h2');
+            dayHeader.style.padding = '1rem';
+            dayHeader.style.borderBottom = '1px solid var(--border-color)';
+            dayHeader.textContent = days[dayIndex];
+            schedule.appendChild(dayHeader);
+            
+            for (let hour = startHour; hour <= endHour; hour++) {
+                const row = document.createElement('div');
+                row.className = 'hour-row';
+                
+                const label = document.createElement('div');
+                label.className = 'hour-label';
+                label.textContent = formatHour(hour);
+                row.appendChild(label);
+                
+                const content = document.createElement('div');
+                content.className = 'hour-content';
+                content.dataset.day = dayIndex;
+                content.dataset.hour = hour;
+                content.onclick = () => quickAddTask(dayIndex, hour);
+                
+                // Add tasks for this hour
+                const hourTasks = tasks.filter(task => 
+                    task.day === dayIndex && 
+                    parseInt(task.time.split(':')[0]) === hour
+                );
+                
+                hourTasks.forEach(task => {
+                    const taskEl = createTaskElement(task);
+                    content.appendChild(taskEl);
+                });
+                
+                row.appendChild(content);
+                schedule.appendChild(row);
+            }
+            
+            // Add current time indicator if it's today
+            if (dayIndex === new Date().getDay()) {
+                updateCurrentTimeIndicator();
+            }
+        }
+
+        // Create task element
+        function createTaskElement(task) {
+            const taskEl = document.createElement('div');
+            taskEl.className = `task-block ${task.priority}-priority`;
+            taskEl.innerHTML = `
+                <div class="task-title">${task.title}</div>
+                <div class="task-time">${task.time} • ${task.duration}min</div>
+                <div class="task-actions">
+                    <button class="task-action-btn edit-btn" onclick="editTask(${task.id}, event)">✎</button>
+                    <button class="task-action-btn delete-btn" onclick="deleteTask(${task.id}, event)">×</button>
+                </div>
+            `;
+            
+            // Make draggable
+            taskEl.draggable = true;
+            taskEl.ondragstart = (e) => {
+                e.dataTransfer.setData('taskId', task.id);
+                e.target.style.opacity = '0.5';
+            };
+            taskEl.ondragend = (e) => {
+                e.target.style.opacity = '';
+            };
+            
+            return taskEl;
+        }
+
+        // Format hour display
+        function formatHour(hour) {
+            if (hour === 0) return '12 AM';
+            if (hour === 12) return '12 PM';
+            if (hour < 12) return `${hour} AM`;
+            return `${hour - 12} PM`;
+        }
+
+        // Quick add task
+        function quickAddTask(day, hour) {
+            openTaskModal();
+            document.getElementById('taskDay').value = day;
+            document.getElementById('taskTime').value = `${hour.toString().padStart(2, '0')}:00`;
+        }
+
+        // Open task modal
+        function openTaskModal() {
+            document.getElementById('taskModal').classList.add('active');
+            document.getElementById('modalTitle').textContent = 'Add Task';
+            document.getElementById('taskForm').reset();
+            currentEditingTask = null;
+        }
+
+        // Close task modal
+        function closeTaskModal() {
+            document.getElementById('taskModal').classList.remove('active');
+            currentEditingTask = null;
+        }
+
+        // Save task
+        function saveTask(e) {
+            e.preventDefault();
+            
+            const taskData = {
+                title: document.getElementById('taskTitle').value,
+                description: document.getElementById('taskDescription').value,
+                day: parseInt(document.getElementById('taskDay').value),
+                time: document.getElementById('taskTime').value,
+                duration: parseInt(document.getElementById('taskDuration').value),
+                priority: document.getElementById('taskPriority').value
+            };
+            
+            if (currentEditingTask) {
+                // Update existing task
+                const index = tasks.findIndex(t => t.id === currentEditingTask);
+                tasks[index] = { ...tasks[index], ...taskData };
+            } else {
+                // Add new task
+                taskData.id = Date.now();
+                tasks.push(taskData);
+            }
+            
+            saveTasks();
+            closeTaskModal();
+            
+            if (currentView === 'week') {
+                renderWeekView();
+            } else {
+                renderDayView(taskData.day);
+            }
+            
+            updateStats();
+        }
+
+        // Edit task
+        function editTask(id, event) {
+            event.stopPropagation();
+            
+            const task = tasks.find(t => t.id === id);
+            if (!task) return;
+            
+            currentEditingTask = id;
+            
+            document.getElementById('modalTitle').textContent = 'Edit Task';
+            document.getElementById('taskTitle').value = task.title;
+            document.getElementById('taskDescription').value = task.description || '';
+            document.getElementById('taskDay').value = task.day;
+            document.getElementById('taskTime').value = task.time;
+            document.getElementById('taskDuration').value = task.duration;
+            document.getElementById('taskPriority').value = task.priority;
+            
+            document.getElementById('taskModal').classList.add('active');
+        }
+
+        // Delete task
+        function deleteTask(id, event) {
+            event.stopPropagation();
+            
+            if (confirm('Delete this task?')) {
+                tasks = tasks.filter(t => t.id !== id);
+                saveTasks();
+                
+                if (currentView === 'week') {
+                    renderWeekView();
+                } else {
+                    renderDayView(new Date().getDay());
+                }
+                
+                updateStats();
+            }
+        }
+
+        // Update statistics
+        function updateStats() {
+            const total = tasks.length;
+            const completed = tasks.filter(t => t.completed).length;
+            const totalHours = tasks.reduce((sum, t) => sum + (t.duration / 60), 0);
+            
+            // Simple productivity score calculation
+            const score = Math.round((completed / (total || 1)) * 100 + totalHours * 2);
+            
+            document.getElementById('totalTasks').textContent = total;
+            document.getElementById('completedTasks').textContent = completed;
+            document.getElementById('productivityScore').textContent = score;
+            document.getElementById('focusHours').textContent = totalHours.toFixed(1) + 'h';
+        }
+
+        // Update current time indicator
+        function updateCurrentTimeIndicator() {
+            // Remove existing indicator
+            const existing = document.querySelector('.current-time-indicator');
+            if (existing) {
+                existing.remove();
+            }
+            
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentMinute = now.getMinutes();
+            
+            if (currentHour >= startHour && currentHour <= endHour) {
+                const indicator = document.createElement('div');
+                indicator.className = 'current-time-indicator';
+                
+                // Calculate position
+                const hourOffset = (currentHour - startHour) * 80; // 80px per hour row
+                const minuteOffset = (currentMinute / 60) * 80;
+                indicator.style.top = (hourOffset + minuteOffset + 100) + 'px'; // 100px for header
+                
+                if (currentView === 'day') {
+                    document.getElementById('daySchedule').appendChild(indicator);
+                }
+            }
+        }
+
+        // Enable drag and drop
+        document.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+        
+        document.addEventListener('drop', (e) => {
+            e.preventDefault();
+            
+            const taskId = parseInt(e.dataTransfer.getData('taskId'));
+            const target = e.target.closest('.time-slot, .hour-content');
+            
+            if (target) {
+                const day = parseInt(target.dataset.day);
+                const hour = parseInt(target.dataset.hour);
+                
+                const task = tasks.find(t => t.id === taskId);
+                if (task) {
+                    task.day = day;
+                    task.time = `${hour.toString().padStart(2, '0')}:00`;
+                    saveTasks();
+                    
+                    if (currentView === 'week') {
+                        renderWeekView();
+                    } else {
+                        renderDayView(day);
+                    }
+                }
+            }
+        });
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

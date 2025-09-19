@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Planner • Prios</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: #252525;
+            --bg-slot: #161616;
+            --text-primary: #ffffff;
+            --text-secondary: #888888;
+            --border-color: #2a2a2a;
+            --accent: #667eea;
+            --success: #48bb78;
+            --warning: #ed8936;
+            --danger: #f56565;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .header-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .brand {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--text-primary);
+        }
+
+        .main-layout {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .goal-card {
+            background: var(--bg-tertiary);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .goal-card h3 {
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .goal-progress {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: var(--bg-primary);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            transition: width 0.3s;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .quick-add {
+            margin-top: 2rem;
+        }
+
+        .quick-add input {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Planner Content */
+        .planner-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+        }
+
+        .planner-header {
+            padding: 1.5rem;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .date-navigation {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .date-display {
+            font-size: 1.25rem;
+            font-weight: 500;
+        }
+
+        .nav-btn {
+            padding: 0.5rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .nav-btn:hover {
+            background: var(--bg-primary);
+        }
+
+        .nav-btn.today {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .view-btn {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            cursor: pointer;
+        }
+
+        .view-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        /* Calendar Grid */
+        .calendar-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: 60px repeat(7, 1fr);
+            gap: 1px;
+            background: var(--border-color);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            overflow: hidden;
+            min-height: 600px;
+        }
+
+        .time-header {
+            grid-column: 1;
+            background: var(--bg-secondary);
+            padding: 0.5rem;
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            border-right: 1px solid var(--border-color);
+        }
+
+        .day-header {
+            background: var(--bg-secondary);
+            padding: 1rem;
+            text-align: center;
+            font-weight: 500;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .day-header.today {
+            background: var(--accent);
+            color: white;
+        }
+
+        .day-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            margin-bottom: 0.25rem;
+        }
+
+        .day-number {
+            font-size: 1.25rem;
+        }
+
+        .time-label {
+            background: var(--bg-secondary);
+            padding: 0.5rem;
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .time-slot {
+            background: var(--bg-slot);
+            min-height: 60px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .time-slot:hover {
+            background: #1a1a1a;
+        }
+
+        .task-block {
+            position: absolute;
+            left: 2px;
+            right: 2px;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            cursor: move;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .task-block:hover {
+            transform: scale(1.02);
+            z-index: 10;
+        }
+
+        .task-block.high {
+            background: var(--danger);
+            color: white;
+        }
+
+        .task-block.medium {
+            background: var(--warning);
+            color: white;
+        }
+
+        .task-block.low {
+            background: var(--success);
+            color: white;
+        }
+
+        .task-block.work {
+            background: var(--accent);
+            color: white;
+        }
+
+        .task-title {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .task-time {
+            font-size: 0.75rem;
+            opacity: 0.9;
+        }
+
+        /* Add Task Button */
+        .add-task-fab {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 56px;
+            height: 56px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            transition: all 0.2s;
+        }
+
+        .add-task-fab:hover {
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="header-nav">
+        <div class="brand">Prios</div>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="dashboard.html">Dashboard</a>
+            <a href="todo-list.html">To-Do</a>
+            <a href="task-planner-enhanced.html" class="active">Planner</a>
+            <a href="productivity-parallel-coords.html">Analytics</a>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="section-title">Active Goals</div>
+            
+            <div class="goal-card">
+                <h3>🚀 Ship MVP</h3>
+                <div class="goal-progress">12/20 tasks completed</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 60%"></div>
+                </div>
+            </div>
+
+            <div class="goal-card">
+                <h3>💪 Fitness Goals 2024</h3>
+                <div class="goal-progress">45/60 workouts</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 75%"></div>
+                </div>
+            </div>
+
+            <div class="goal-card">
+                <h3>📚 Learn Spanish</h3>
+                <div class="goal-progress">120/200 lessons</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 60%"></div>
+                </div>
+            </div>
+
+            <button class="btn" style="margin-top: 1rem;">New Goal</button>
+
+            <div class="quick-add">
+                <div class="section-title">Quick Stats</div>
+                <div class="goal-card">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; text-align: center;">
+                        <div>
+                            <div style="font-size: 1.5rem; color: var(--accent);">8</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Tasks Today</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 1.5rem; color: var(--success);">75%</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Complete</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section-title" style="margin-top: 2rem;">Quick Add Task</div>
+                <input type="text" placeholder="Task name..." id="quickTaskName">
+                <button class="btn" onclick="quickAddTask()">Add Task</button>
+            </div>
+        </div>
+
+        <!-- Planner Content -->
+        <div class="planner-content">
+            <div class="planner-header">
+                <div class="date-navigation">
+                    <button class="nav-btn" onclick="previousWeek()">←</button>
+                    <div class="date-display" id="dateDisplay">November 18-24, 2024</div>
+                    <button class="nav-btn" onclick="nextWeek()">→</button>
+                    <button class="nav-btn today" onclick="goToToday()">Today</button>
+                </div>
+                
+                <div class="view-toggle">
+                    <button class="view-btn active" onclick="setView('week')">Week</button>
+                    <button class="view-btn" onclick="setView('day')">Day</button>
+                    <button class="view-btn" onclick="setView('month')">Month</button>
+                </div>
+            </div>
+
+            <div class="calendar-container">
+                <div class="calendar-grid" id="calendarGrid">
+                    <!-- Generated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="add-task-fab" onclick="openTaskModal()">+</div>
+
+    <script>
+        let currentDate = new Date();
+        let currentView = 'week';
+
+        function initCalendar() {
+            renderWeekView();
+        }
+
+        function renderWeekView() {
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+            
+            // Add corner cell
+            const corner = document.createElement('div');
+            corner.style.background = 'var(--bg-secondary)';
+            grid.appendChild(corner);
+            
+            // Add day headers
+            const startOfWeek = getStartOfWeek(currentDate);
+            const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+            
+            for (let i = 0; i < 7; i++) {
+                const dayDate = new Date(startOfWeek);
+                dayDate.setDate(startOfWeek.getDate() + i);
+                
+                const header = document.createElement('div');
+                header.className = 'day-header';
+                if (isToday(dayDate)) {
+                    header.classList.add('today');
+                }
+                header.innerHTML = `
+                    <div class="day-label">${days[i]}</div>
+                    <div class="day-number">${dayDate.getDate()}</div>
+                `;
+                grid.appendChild(header);
+            }
+            
+            // Add time slots (8 AM to 8 PM)
+            for (let hour = 8; hour <= 20; hour++) {
+                // Time label
+                const timeLabel = document.createElement('div');
+                timeLabel.className = 'time-label';
+                timeLabel.textContent = formatHour(hour);
+                grid.appendChild(timeLabel);
+                
+                // Day slots
+                for (let day = 0; day < 7; day++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'time-slot';
+                    slot.dataset.hour = hour;
+                    slot.dataset.day = day;
+                    
+                    // Add sample tasks
+                    if (day === 1 && hour === 8) {
+                        const task = createTask('Morning Meditation', 'wellness', 8, 1);
+                        slot.appendChild(task);
+                    }
+                    if (day === 2 && hour === 9) {
+                        const task = createTask('Team Standup', 'work', 9, 0.5);
+                        slot.appendChild(task);
+                    }
+                    if (day === 3 && hour === 14) {
+                        const task = createTask('Code Review', 'work', 14, 2);
+                        slot.appendChild(task);
+                    }
+                    
+                    grid.appendChild(slot);
+                }
+            }
+            
+            updateDateDisplay();
+        }
+
+        function createTask(title, type, hour, duration) {
+            const task = document.createElement('div');
+            task.className = `task-block ${type}`;
+            task.style.height = `${duration * 60 - 4}px`;
+            task.innerHTML = `
+                <div class="task-title">${title}</div>
+                <div class="task-time">${duration}h</div>
+            `;
+            task.draggable = true;
+            return task;
+        }
+
+        function formatHour(hour) {
+            if (hour === 0) return '12 AM';
+            if (hour === 12) return '12 PM';
+            if (hour < 12) return `${hour} AM`;
+            return `${hour - 12} PM`;
+        }
+
+        function getStartOfWeek(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day;
+            return new Date(d.setDate(diff));
+        }
+
+        function isToday(date) {
+            const today = new Date();
+            return date.toDateString() === today.toDateString();
+        }
+
+        function updateDateDisplay() {
+            const start = getStartOfWeek(currentDate);
+            const end = new Date(start);
+            end.setDate(start.getDate() + 6);
+            
+            const options = { month: 'long', day: 'numeric' };
+            const startStr = start.toLocaleDateString('en-US', options);
+            const endStr = end.toLocaleDateString('en-US', options);
+            const year = start.getFullYear();
+            
+            document.getElementById('dateDisplay').textContent = 
+                `${startStr}-${end.getDate()}, ${year}`;
+        }
+
+        function previousWeek() {
+            currentDate.setDate(currentDate.getDate() - 7);
+            renderWeekView();
+        }
+
+        function nextWeek() {
+            currentDate.setDate(currentDate.getDate() + 7);
+            renderWeekView();
+        }
+
+        function goToToday() {
+            currentDate = new Date();
+            renderWeekView();
+        }
+
+        function setView(view) {
+            currentView = view;
+            document.querySelectorAll('.view-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            if (view === 'week') {
+                renderWeekView();
+            }
+            // Add day and month views as needed
+        }
+
+        function quickAddTask() {
+            const name = document.getElementById('quickTaskName').value;
+            if (name) {
+                // Add task logic
+                document.getElementById('quickTaskName').value = '';
+            }
+        }
+
+        function openTaskModal() {
+            // Open task creation modal
+            alert('Task creation modal');
+        }
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', initCalendar);
+    </script>
+</body>
+</html>

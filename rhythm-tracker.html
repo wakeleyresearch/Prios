@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rhythm Tracker - Productivity System</title>
+    <link rel="stylesheet" href="theme.css">
+    <style>
+        /* Rhythm Tracker Specific Styles */
+        :root {
+            --rhythm-primary: #6B46C1;
+            --rhythm-secondary: #9333EA;
+            --rhythm-accent: #A855F7;
+            --sleep-color: #312E81;
+            --wake-color: #FCD34D;
+            --consistency-good: #10B981;
+            --consistency-medium: #F59E0B;
+            --consistency-poor: #EF4444;
+        }
+
+        .rhythm-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .rhythm-header {
+            background: linear-gradient(135deg, var(--rhythm-primary), var(--rhythm-secondary));
+            color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .rhythm-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .rhythm-score {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--wake-color);
+        }
+
+        .rhythm-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .sleep-input-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .sleep-input-card h2 {
+            color: var(--rhythm-primary);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .sleep-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #4B5563;
+            font-size: 0.9rem;
+        }
+
+        .time-input {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .time-input input[type="time"] {
+            padding: 0.5rem;
+            border: 2px solid #E5E7EB;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            flex: 1;
+        }
+
+        .time-input input[type="time"]:focus {
+            outline: none;
+            border-color: var(--rhythm-accent);
+        }
+
+        .quality-selector {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .quality-btn {
+            flex: 1;
+            padding: 0.5rem;
+            border: 2px solid #E5E7EB;
+            background: white;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .quality-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .quality-btn.selected {
+            background: var(--rhythm-accent);
+            color: white;
+            border-color: var(--rhythm-accent);
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, var(--rhythm-primary), var(--rhythm-secondary));
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .submit-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .visualization-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .polar-clock {
+            width: 100%;
+            height: 400px;
+        }
+
+        .consistency-metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #f3f4f6, #ffffff);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--rhythm-accent);
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--rhythm-primary);
+        }
+
+        .metric-label {
+            color: #6B7280;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .streak-indicator {
+            display: flex;
+            gap: 0.25rem;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .streak-day {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #E5E7EB;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .streak-day.active {
+            background: var(--consistency-good);
+            color: white;
+        }
+
+        .insights-panel {
+            background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .insight-item {
+            display: flex;
+            gap: 1rem;
+            padding: 0.75rem;
+            background: white;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .insight-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .insight-icon.success {
+            background: #D1FAE5;
+            color: var(--consistency-good);
+        }
+
+        .insight-icon.warning {
+            background: #FED7AA;
+            color: var(--consistency-medium);
+        }
+
+        .insight-icon.info {
+            background: #DBEAFE;
+            color: #3B82F6;
+        }
+
+        .ideal-times-config {
+            background: #F9FAFB;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .ideal-times-config h3 {
+            color: #374151;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .ideal-time-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .ideal-time-row label {
+            color: #6B7280;
+            font-size: 0.9rem;
+        }
+
+        .ideal-time-row input {
+            width: 100px;
+            padding: 0.25rem 0.5rem;
+            border: 1px solid #D1D5DB;
+            border-radius: 0.25rem;
+        }
+
+        /* Navigation */
+        .nav-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #E5E7EB;
+        }
+
+        .nav-tab {
+            padding: 1rem 2rem;
+            background: none;
+            border: none;
+            color: #6B7280;
+            font-weight: 600;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.3s;
+        }
+
+        .nav-tab.active {
+            color: var(--rhythm-primary);
+        }
+
+        .nav-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--rhythm-primary);
+        }
+
+        /* Circular progress indicator */
+        .circular-progress {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            margin: 0 auto;
+        }
+
+        .circular-progress svg {
+            transform: rotate(-90deg);
+        }
+
+        .progress-circle-bg {
+            fill: none;
+            stroke: #E5E7EB;
+            stroke-width: 10;
+        }
+
+        .progress-circle {
+            fill: none;
+            stroke: var(--rhythm-accent);
+            stroke-width: 10;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s ease;
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--rhythm-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="rhythm-container">
+        <!-- Header with overall rhythm score -->
+        <div class="rhythm-header">
+            <h1>🎵 Rhythm Tracker</h1>
+            <p>Track your consistency and optimize your productivity rhythm</p>
+            <div>
+                <span>Your Rhythm Score: </span>
+                <span class="rhythm-score" id="rhythmScore">--</span>
+                <span>/100</span>
+            </div>
+        </div>
+
+        <!-- Navigation tabs -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" data-tab="tracker">Sleep Tracker</button>
+            <button class="nav-tab" data-tab="patterns">Patterns</button>
+            <button class="nav-tab" data-tab="insights">Insights</button>
+            <button class="nav-tab" data-tab="settings">Settings</button>
+        </div>
+
+        <!-- Main content grid -->
+        <div class="rhythm-grid" id="trackerTab">
+            <!-- Sleep input form -->
+            <div class="sleep-input-card">
+                <h2>
+                    <span>🌙</span>
+                    <span>Track Your Sleep</span>
+                </h2>
+                <form class="sleep-form" id="sleepForm">
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="sleepDate" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Sleep Time</label>
+                        <div class="time-input">
+                            <span>🛏️</span>
+                            <input type="time" id="sleepTime" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Wake Time</label>
+                        <div class="time-input">
+                            <span>☀️</span>
+                            <input type="time" id="wakeTime" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Sleep Quality</label>
+                        <div class="quality-selector" id="qualitySelector">
+                            <button type="button" class="quality-btn" data-quality="1">😴</button>
+                            <button type="button" class="quality-btn" data-quality="2">😐</button>
+                            <button type="button" class="quality-btn" data-quality="3">🙂</button>
+                            <button type="button" class="quality-btn" data-quality="4">😊</button>
+                            <button type="button" class="quality-btn" data-quality="5">🤩</button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="submit-btn">Track Sleep</button>
+                </form>
+
+                <!-- Ideal times configuration -->
+                <div class="ideal-times-config">
+                    <h3>⚙️ Ideal Schedule</h3>
+                    <div class="ideal-time-row">
+                        <label>Ideal Sleep Time:</label>
+                        <input type="time" id="idealSleep" value="22:30">
+                    </div>
+                    <div class="ideal-time-row">
+                        <label>Ideal Wake Time:</label>
+                        <input type="time" id="idealWake" value="06:30">
+                    </div>
+                    <div class="ideal-time-row">
+                        <label>Work Start:</label>
+                        <input type="time" id="idealWorkStart" value="09:00">
+                    </div>
+                    <div class="ideal-time-row">
+                        <label>Work End:</label>
+                        <input type="time" id="idealWorkEnd" value="17:00">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualization -->
+            <div class="visualization-card">
+                <h2>Sleep Pattern Visualization</h2>
+                <canvas id="polarClock" class="polar-clock"></canvas>
+            </div>
+        </div>
+
+        <!-- Consistency metrics -->
+        <div class="consistency-metrics">
+            <div class="metric-card">
+                <div class="metric-value" id="sleepConsistency">--</div>
+                <div class="metric-label">Sleep Consistency</div>
+                <div class="circular-progress">
+                    <svg width="150" height="150">
+                        <circle class="progress-circle-bg" cx="75" cy="75" r="65"></circle>
+                        <circle class="progress-circle" id="sleepProgress" cx="75" cy="75" r="65"
+                                stroke-dasharray="408" stroke-dashoffset="408"></circle>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-value" id="attendanceScore">--</div>
+                <div class="metric-label">Attendance</div>
+                <div class="streak-indicator" id="attendanceStreak">
+                    <div class="streak-day">M</div>
+                    <div class="streak-day">T</div>
+                    <div class="streak-day">W</div>
+                    <div class="streak-day">T</div>
+                    <div class="streak-day">F</div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-value" id="taskConsistency">--</div>
+                <div class="metric-label">Task Consistency</div>
+                <canvas id="taskTrend" width="150" height="80"></canvas>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-value" id="circadianAlignment">--</div>
+                <div class="metric-label">Circadian Alignment</div>
+                <canvas id="activityHeatmap" width="150" height="80"></canvas>
+            </div>
+        </div>
+
+        <!-- Insights panel -->
+        <div class="insights-panel" id="insightsPanel">
+            <h2>💡 Rhythm Insights</h2>
+            <div id="insightsList"></div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="rhythm-analyzer.js"></script>
+    <script>
+        // Initialize rhythm tracking interface
+        class RhythmTracker {
+            constructor() {
+                this.db = null;
+                this.rhythmAnalyzer = null;
+                this.selectedQuality = 3;
+                this.init();
+            }
+
+            async init() {
+                // Initialize database
+                await this.initDB();
+                
+                // Initialize rhythm analyzer
+                this.rhythmAnalyzer = new RhythmAnalyzer({
+                    idealSleepTime: localStorage.getItem('idealSleepTime') || "22:30",
+                    idealWakeTime: localStorage.getItem('idealWakeTime') || "06:30"
+                });
+
+                // Set up event listeners
+                this.setupEventListeners();
+                
+                // Load existing data
+                await this.loadData();
+                
+                // Update visualizations
+                this.updateVisualizations();
+            }
+
+            async initDB() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open('ProductivityDB', 2);
+                    
+                    request.onsuccess = () => {
+                        this.db = request.result;
+                        resolve();
+                    };
+                    
+                    request.onerror = () => {
+                        reject(request.error);
+                    };
+                });
+            }
+
+            setupEventListeners() {
+                // Sleep form submission
+                document.getElementById('sleepForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.trackSleep();
+                });
+
+                // Quality selector
+                document.querySelectorAll('.quality-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.quality-btn').forEach(b => b.classList.remove('selected'));
+                        btn.classList.add('selected');
+                        this.selectedQuality = parseInt(btn.dataset.quality);
+                    });
+                });
+
+                // Ideal times configuration
+                ['idealSleep', 'idealWake', 'idealWorkStart', 'idealWorkEnd'].forEach(id => {
+                    document.getElementById(id).addEventListener('change', (e) => {
+                        localStorage.setItem(id + 'Time', e.target.value);
+                        this.updateAnalyzer();
+                    });
+                });
+
+                // Navigation tabs
+                document.querySelectorAll('.nav-tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        // Tab switching logic here
+                    });
+                });
+
+                // Set today's date as default
+                document.getElementById('sleepDate').valueAsDate = new Date();
+            }
+
+            async trackSleep() {
+                const sleepData = {
+                    date: document.getElementById('sleepDate').value,
+                    sleepTime: document.getElementById('sleepTime').value,
+                    wakeTime: document.getElementById('wakeTime').value,
+                    quality: this.selectedQuality,
+                    duration: this.calculateDuration(
+                        document.getElementById('sleepTime').value,
+                        document.getElementById('wakeTime').value
+                    )
+                };
+
+                // Save to database
+                const transaction = this.db.transaction(['sleep_data', 'rhythm_data'], 'readwrite');
+                const sleepStore = transaction.objectStore('sleep_data');
+                const rhythmStore = transaction.objectStore('rhythm_data');
+                
+                sleepStore.put(sleepData);
+                
+                // Also save to rhythm data
+                rhythmStore.add({
+                    date: sleepData.date,
+                    type: 'sleep',
+                    sleepTime: sleepData.sleepTime,
+                    wakeTime: sleepData.wakeTime,
+                    quality: sleepData.quality
+                });
+
+                transaction.oncomplete = async () => {
+                    // Update rhythm score
+                    await this.calculateRhythmScore();
+                    
+                    // Update visualizations
+                    this.updateVisualizations();
+                    
+                    // Show success message
+                    this.showNotification('Sleep data tracked successfully!');
+                    
+                    // Reset form
+                    document.getElementById('sleepForm').reset();
+                    document.getElementById('sleepDate').valueAsDate = new Date();
+                };
+            }
+
+            calculateDuration(sleepTime, wakeTime) {
+                const sleep = this.timeToMinutes(sleepTime);
+                const wake = this.timeToMinutes(wakeTime);
+                
+                let duration = wake - sleep;
+                if (duration < 0) {
+                    duration += 24 * 60; // Handle overnight sleep
+                }
+                
+                return duration;
+            }
+
+            timeToMinutes(timeStr) {
+                const [hours, minutes] = timeStr.split(':').map(Number);
+                return hours * 60 + minutes;
+            }
+
+            async loadData() {
+                // Load last 30 days of data
+                const endDate = new Date();
+                const startDate = new Date();
+                startDate.setDate(startDate.getDate() - 30);
+                
+                const transaction = this.db.transaction(['sleep_data', 'rhythm_data'], 'readonly');
+                const sleepStore = transaction.objectStore('sleep_data');
+                const rhythmStore = transaction.objectStore('rhythm_data');
+                
+                const sleepData = await this.getAll(sleepStore);
+                const rhythmData = await this.getAll(rhythmStore.index('date'));
+                
+                this.data = {
+                    sleep: sleepData,
+                    rhythm: rhythmData
+                };
+            }
+
+            getAll(store) {
+                return new Promise((resolve, reject) => {
+                    const request = store.getAll();
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            async calculateRhythmScore() {
+                if (!this.rhythmAnalyzer || !this.data) return;
+                
+                const score = await this.rhythmAnalyzer.computeRhythmScore({
+                    sleepData: this.data.sleep.map(s => ({
+                        sleepTime: s.sleepTime,
+                        wakeTime: s.wakeTime
+                    })),
+                    attendanceData: [], // Would come from task data
+                    taskData: [], // Would come from task data
+                    activityData: this.data.rhythm
+                        .filter(r => r.type === 'task_timing')
+                        .map(r => ({
+                            timestamp: new Date(`${r.date}T${r.actualTime || '12:00'}`)
+                        }))
+                });
+                
+                // Update UI
+                document.getElementById('rhythmScore').textContent = Math.round(score.composite);
+                document.getElementById('sleepConsistency').textContent = Math.round(score.components.sleep);
+                document.getElementById('attendanceScore').textContent = Math.round(score.components.attendance);
+                document.getElementById('taskConsistency').textContent = Math.round(score.components.task);
+                document.getElementById('circadianAlignment').textContent = Math.round(score.components.circadian);
+                
+                // Update insights
+                this.updateInsights(score.insights);
+                
+                return score;
+            }
+
+            updateInsights(insights) {
+                const container = document.getElementById('insightsList');
+                container.innerHTML = '';
+                
+                insights.forEach(insight => {
+                    const item = document.createElement('div');
+                    item.className = 'insight-item';
+                    
+                    const icon = document.createElement('div');
+                    icon.className = `insight-icon ${insight.type}`;
+                    icon.textContent = insight.type === 'success' ? '✓' : 
+                                       insight.type === 'warning' ? '!' : 'i';
+                    
+                    const text = document.createElement('div');
+                    text.textContent = insight.message;
+                    
+                    item.appendChild(icon);
+                    item.appendChild(text);
+                    container.appendChild(item);
+                });
+            }
+
+            updateVisualizations() {
+                this.drawPolarClock();
+                this.updateProgressCircles();
+                this.drawTaskTrend();
+                this.drawActivityHeatmap();
+            }
+
+            drawPolarClock() {
+                const canvas = document.getElementById('polarClock');
+                const ctx = canvas.getContext('2d');
+                
+                // Set canvas size
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+                
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const radius = Math.min(centerX, centerY) - 20;
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw clock face
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+                ctx.strokeStyle = '#E5E7EB';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Draw hour marks
+                for (let hour = 0; hour < 24; hour++) {
+                    const angle = (hour / 24) * 2 * Math.PI - Math.PI / 2;
+                    const x1 = centerX + Math.cos(angle) * (radius - 10);
+                    const y1 = centerY + Math.sin(angle) * (radius - 10);
+                    const x2 = centerX + Math.cos(angle) * radius;
+                    const y2 = centerY + Math.sin(angle) * radius;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.strokeStyle = '#D1D5DB';
+                    ctx.lineWidth = hour % 6 === 0 ? 2 : 1;
+                    ctx.stroke();
+                    
+                    // Draw hour labels
+                    if (hour % 6 === 0) {
+                        ctx.font = '12px sans-serif';
+                        ctx.fillStyle = '#6B7280';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        const labelX = centerX + Math.cos(angle) * (radius - 25);
+                        const labelY = centerY + Math.sin(angle) * (radius - 25);
+                        ctx.fillText(hour.toString(), labelX, labelY);
+                    }
+                }
+                
+                // Plot sleep/wake times
+                if (this.data && this.data.sleep.length > 0) {
+                    this.data.sleep.slice(-7).forEach((sleep, index) => {
+                        const opacity = (index + 1) / 7;
+                        
+                        // Sleep time
+                        const sleepAngle = (this.timeToMinutes(sleep.sleepTime) / (24 * 60)) * 2 * Math.PI - Math.PI / 2;
+                        const sleepX = centerX + Math.cos(sleepAngle) * (radius - 40);
+                        const sleepY = centerY + Math.sin(sleepAngle) * (radius - 40);
+                        
+                        ctx.beginPath();
+                        ctx.arc(sleepX, sleepY, 5, 0, 2 * Math.PI);
+                        ctx.fillStyle = `rgba(49, 46, 129, ${opacity})`;
+                        ctx.fill();
+                        
+                        // Wake time
+                        const wakeAngle = (this.timeToMinutes(sleep.wakeTime) / (24 * 60)) * 2 * Math.PI - Math.PI / 2;
+                        const wakeX = centerX + Math.cos(wakeAngle) * (radius - 40);
+                        const wakeY = centerY + Math.sin(wakeAngle) * (radius - 40);
+                        
+                        ctx.beginPath();
+                        ctx.arc(wakeX, wakeY, 5, 0, 2 * Math.PI);
+                        ctx.fillStyle = `rgba(252, 211, 77, ${opacity})`;
+                        ctx.fill();
+                        
+                        // Connect sleep and wake
+                        ctx.beginPath();
+                        ctx.arc(centerX, centerY, radius - 40, sleepAngle, wakeAngle);
+                        ctx.strokeStyle = `rgba(168, 85, 247, ${opacity * 0.5})`;
+                        ctx.lineWidth = 3;
+                        ctx.stroke();
+                    });
+                }
+            }
+
+            updateProgressCircles() {
+                const sleepScore = parseInt(document.getElementById('sleepConsistency').textContent) || 0;
+                const circumference = 2 * Math.PI * 65;
+                const offset = circumference - (sleepScore / 100) * circumference;
+                
+                const circle = document.getElementById('sleepProgress');
+                if (circle) {
+                    circle.style.strokeDashoffset = offset;
+                }
+            }
+
+            drawTaskTrend() {
+                const canvas = document.getElementById('taskTrend');
+                const ctx = canvas.getContext('2d');
+                
+                // Simple trend line visualization
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.beginPath();
+                ctx.moveTo(10, 60);
+                ctx.lineTo(40, 50);
+                ctx.lineTo(70, 45);
+                ctx.lineTo(100, 35);
+                ctx.lineTo(130, 30);
+                ctx.strokeStyle = '#10B981';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            drawActivityHeatmap() {
+                const canvas = document.getElementById('activityHeatmap');
+                const ctx = canvas.getContext('2d');
+                
+                // Simple heatmap visualization
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                const hours = 24;
+                const cellWidth = canvas.width / hours;
+                
+                for (let hour = 0; hour < hours; hour++) {
+                    const intensity = Math.sin((hour / 24) * Math.PI) * 0.8 + 0.2;
+                    ctx.fillStyle = `rgba(168, 85, 247, ${intensity})`;
+                    ctx.fillRect(hour * cellWidth, 20, cellWidth - 1, 40);
+                }
+            }
+
+            updateAnalyzer() {
+                this.rhythmAnalyzer = new RhythmAnalyzer({
+                    idealSleepTime: document.getElementById('idealSleep').value,
+                    idealWakeTime: document.getElementById('idealWake').value,
+                    idealWorkStart: document.getElementById('idealWorkStart').value,
+                    idealWorkEnd: document.getElementById('idealWorkEnd').value
+                });
+                
+                this.calculateRhythmScore();
+            }
+
+            showNotification(message) {
+                // Simple notification - could be enhanced with a proper toast library
+                const notification = document.createElement('div');
+                notification.textContent = message;
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: var(--consistency-good);
+                    color: white;
+                    padding: 1rem 1.5rem;
+                    border-radius: 0.5rem;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    z-index: 1000;
+                    animation: slideIn 0.3s ease;
+                `;
+                
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
+            }
+        }
+
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            new RhythmTracker();
+        });
+    </script>
+</body>
+</html>

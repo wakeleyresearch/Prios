@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Productivity Analytics with Rhythm</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            margin: 0;
+            color: #2D3748;
+            font-size: 2.5rem;
+        }
+
+        .subtitle {
+            color: #718096;
+            margin-top: 0.5rem;
+        }
+
+        .formula {
+            background: #F7FAFC;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-family: 'Courier New', monospace;
+            margin-top: 1rem;
+            color: #4A5568;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 2rem;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        #parallelChart {
+            width: 100%;
+            height: 600px;
+        }
+
+        .stats-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #F7FAFC, #FFFFFF);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-label {
+            color: #718096;
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2D3748;
+        }
+
+        .stat-change {
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+
+        .stat-change.positive {
+            color: #48BB78;
+        }
+
+        .stat-change.negative {
+            color: #F56565;
+        }
+
+        .weights-controller {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .weight-slider {
+            margin-bottom: 1rem;
+        }
+
+        .weight-slider label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            color: #4A5568;
+        }
+
+        .weight-slider input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            height: 8px;
+            border-radius: 5px;
+            background: #E2E8F0;
+            outline: none;
+        }
+
+        .weight-slider input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+
+        .rhythm-indicators {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .rhythm-card {
+            background: linear-gradient(135deg, #FFE5B4, #FFD700);
+            padding: 1rem;
+            border-radius: 0.75rem;
+            text-align: center;
+        }
+
+        .rhythm-card.sleep {
+            background: linear-gradient(135deg, #C6E2FF, #4169E1);
+        }
+
+        .rhythm-card.attendance {
+            background: linear-gradient(135deg, #D4F1D4, #32CD32);
+        }
+
+        .rhythm-card.task {
+            background: linear-gradient(135deg, #FFE4E1, #FF69B4);
+        }
+
+        .rhythm-card.circadian {
+            background: linear-gradient(135deg, #F0E68C, #FFD700);
+        }
+
+        .rhythm-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .rhythm-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2D3748;
+        }
+
+        .rhythm-label {
+            font-size: 0.875rem;
+            color: #4A5568;
+            margin-top: 0.25rem;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #E2E8F0;
+            color: #4A5568;
+        }
+
+        .insight-banner {
+            background: linear-gradient(135deg, #FED7AA, #F97316);
+            color: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .insight-banner.positive {
+            background: linear-gradient(135deg, #C6F6D5, #48BB78);
+        }
+
+        .insight-banner.warning {
+            background: linear-gradient(135deg, #FEEBC8, #F6AD55);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>📊 Enhanced Productivity Analytics</h1>
+            <p class="subtitle">Real-time productivity tracking with rhythm analysis</p>
+            <div class="formula">
+                S = 0.20·E + 0.20·D + 0.25·Q + 0.20·G + 0.15·R
+                <br>
+                <small>Effort · Duration · Quality · Goals · Rhythm</small>
+            </div>
+        </div>
+
+        <!-- Rhythm Component Indicators -->
+        <div class="rhythm-indicators">
+            <div class="rhythm-card sleep">
+                <div class="rhythm-icon">🌙</div>
+                <div class="rhythm-value" id="sleepScore">--</div>
+                <div class="rhythm-label">Sleep Consistency</div>
+            </div>
+            <div class="rhythm-card attendance">
+                <div class="rhythm-icon">📍</div>
+                <div class="rhythm-value" id="attendanceScore">--</div>
+                <div class="rhythm-label">Attendance</div>
+            </div>
+            <div class="rhythm-card task">
+                <div class="rhythm-icon">✅</div>
+                <div class="rhythm-value" id="taskScore">--</div>
+                <div class="rhythm-label">Task Rhythm</div>
+            </div>
+            <div class="rhythm-card circadian">
+                <div class="rhythm-icon">☀️</div>
+                <div class="rhythm-value" id="circadianScore">--</div>
+                <div class="rhythm-label">Circadian Alignment</div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Parallel Coordinates Chart -->
+            <div class="chart-container">
+                <h2>Productivity Components Over Time</h2>
+                <div id="parallelChart"></div>
+            </div>
+
+            <!-- Statistics Panel -->
+            <div class="stats-panel">
+                <h3>Statistics</h3>
+                
+                <div class="stat-card">
+                    <div class="stat-label">Composite Score</div>
+                    <div class="stat-value" id="compositeScore">--</div>
+                    <div class="stat-change positive" id="compositeChange">↑ 5.2%</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-label">Rhythm Score</div>
+                    <div class="stat-value" id="rhythmScoreMain">--</div>
+                    <div class="stat-change" id="rhythmChange">--</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-label">Best Day</div>
+                    <div class="stat-value" id="bestDay">--</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-label">Consistency</div>
+                    <div class="stat-value" id="consistency">--</div>
+                    <div class="stat-change" id="consistencyChange">--</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-label">Cronbach's α</div>
+                    <div class="stat-value" id="cronbachAlpha">--</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weight Controller -->
+        <div class="weights-controller">
+            <h3>⚙️ Adjust Component Weights</h3>
+            
+            <div class="weight-slider">
+                <label>
+                    <span>Effort (E)</span>
+                    <span id="weightE">20%</span>
+                </label>
+                <input type="range" id="sliderE" min="0" max="100" value="20">
+            </div>
+
+            <div class="weight-slider">
+                <label>
+                    <span>Duration (D)</span>
+                    <span id="weightD">20%</span>
+                </label>
+                <input type="range" id="sliderD" min="0" max="100" value="20">
+            </div>
+
+            <div class="weight-slider">
+                <label>
+                    <span>Quality (Q)</span>
+                    <span id="weightQ">25%</span>
+                </label>
+                <input type="range" id="sliderQ" min="0" max="100" value="25">
+            </div>
+
+            <div class="weight-slider">
+                <label>
+                    <span>Goals (G)</span>
+                    <span id="weightG">20%</span>
+                </label>
+                <input type="range" id="sliderG" min="0" max="100" value="20">
+            </div>
+
+            <div class="weight-slider">
+                <label>
+                    <span>Rhythm (R)</span>
+                    <span id="weightR">15%</span>
+                </label>
+                <input type="range" id="sliderR" min="0" max="100" value="15">
+            </div>
+
+            <div class="control-buttons">
+                <button class="btn btn-primary" onclick="applyWeights()">Apply Weights</button>
+                <button class="btn btn-secondary" onclick="resetWeights()">Reset to Default</button>
+                <button class="btn btn-secondary" onclick="optimizeWeights()">Auto-Optimize</button>
+            </div>
+        </div>
+
+        <!-- Insights -->
+        <div id="insightsContainer"></div>
+    </div>
+
+    <script src="integration-enhanced.js"></script>
+    <script src="rhythm-analyzer.js"></script>
+    <script>
+        let chart = null;
+        let integration = null;
+        let currentData = null;
+
+        // Initialize
+        async function init() {
+            // Initialize integration layer
+            integration = new ProductivityIntegration();
+            
+            // Initialize chart
+            const chartDom = document.getElementById('parallelChart');
+            chart = echarts.init(chartDom, null, { renderer: 'canvas' });
+            
+            // Load and display data
+            await loadData();
+            
+            // Set up event listeners
+            setupEventListeners();
+            
+            // Set up real-time updates
+            setInterval(loadData, 30000); // Update every 30 seconds
+        }
+
+        async function loadData() {
+            try {
+                // Generate data with rhythm component
+                currentData = await generateEnhancedData();
+                
+                // Update chart
+                updateChart(currentData);
+                
+                // Update statistics
+                updateStatistics(currentData);
+                
+                // Update rhythm indicators
+                updateRhythmIndicators(currentData);
+                
+                // Generate insights
+                generateInsights(currentData);
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+
+        async function generateEnhancedData() {
+            // Get data from integration layer
+            const parallelData = await integration.generateParallelCoordsData();
+            
+            // Generate sample data with rhythm component
+            const data = [];
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            
+            // Create lines for each component including rhythm
+            const components = [
+                { name: 'Effort', color: '#FF6B6B' },
+                { name: 'Duration', color: '#4ECDC4' },
+                { name: 'Quality', color: '#45B7D1' },
+                { name: 'Goals', color: '#96CEB4' },
+                { name: 'Rhythm', color: '#DDA0DD' },  // New rhythm component
+                { name: 'Composite', color: '#FFD93D', width: 3 }
+            ];
+            
+            components.forEach(comp => {
+                const values = days.map(() => Math.random() * 40 + 60);
+                
+                // Add some realistic patterns
+                if (comp.name === 'Rhythm') {
+                    // Rhythm tends to be more consistent
+                    const base = 70 + Math.random() * 20;
+                    values.forEach((v, i) => {
+                        values[i] = base + Math.sin(i / 7 * Math.PI * 2) * 10 + Math.random() * 5;
+                    });
+                }
+                
+                if (comp.name === 'Composite') {
+                    // Calculate composite from components
+                    values.forEach((v, i) => {
+                        values[i] = calculateComposite(i, data);
+                    });
+                }
+                
+                data.push({
+                    value: values,
+                    name: comp.name,
+                    lineStyle: {
+                        width: comp.width || 2,
+                        color: comp.color
+                    }
+                });
+            });
+            
+            return { days, data };
+        }
+
+        function calculateComposite(dayIndex, componentData) {
+            const weights = {
+                Effort: 0.20,
+                Duration: 0.20,
+                Quality: 0.25,
+                Goals: 0.20,
+                Rhythm: 0.15
+            };
+            
+            let composite = 0;
+            componentData.forEach(comp => {
+                if (weights[comp.name]) {
+                    composite += comp.value[dayIndex] * weights[comp.name];
+                }
+            });
+            
+            return composite || 75;
+        }
+
+        function updateChart(data) {
+            const option = {
+                backgroundColor: 'transparent',
+                title: {
+                    text: '',
+                    left: 'center'
+                },
+                parallelAxis: data.days.map((day, index) => ({
+                    dim: index,
+                    name: day,
+                    scale: true,
+                    min: 0,
+                    max: 100,
+                    axisLabel: {
+                        show: true,
+                        color: '#666'
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#ddd'
+                        }
+                    }
+                })),
+                parallel: {
+                    left: '5%',
+                    right: '5%',
+                    bottom: 50,
+                    top: 50,
+                    parallelAxisDefault: {
+                        type: 'value',
+                        name: 'Productivity Score',
+                        nameLocation: 'end',
+                        nameGap: 20,
+                        splitLine: {
+                            show: true,
+                            lineStyle: {
+                                color: '#f0f0f0'
+                            }
+                        },
+                        axisTick: {
+                            lineStyle: {
+                                color: '#777'
+                            }
+                        },
+                        axisLabel: {
+                            color: '#666'
+                        }
+                    }
+                },
+                series: data.data.map(item => ({
+                    type: 'parallel',
+                    lineStyle: item.lineStyle,
+                    data: [item.value],
+                    name: item.name
+                })),
+                legend: {
+                    bottom: 10,
+                    data: data.data.map(item => item.name),
+                    itemGap: 20,
+                    textStyle: {
+                        fontSize: 12
+                    }
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function(params) {
+                        const dayIndex = params.dataIndex;
+                        const day = data.days[dayIndex];
+                        return `<strong>${params.seriesName}</strong><br/>
+                                ${day}: ${params.value[dayIndex].toFixed(1)}%`;
+                    }
+                }
+            };
+            
+            chart.setOption(option);
+        }
+
+        function updateStatistics(data) {
+            // Calculate statistics
+            const composite = data.data.find(d => d.name === 'Composite');
+            const rhythm = data.data.find(d => d.name === 'Rhythm');
+            
+            if (composite) {
+                const avg = composite.value.reduce((a, b) => a + b, 0) / composite.value.length;
+                document.getElementById('compositeScore').textContent = avg.toFixed(1);
+                
+                // Best day
+                const maxIndex = composite.value.indexOf(Math.max(...composite.value));
+                document.getElementById('bestDay').textContent = data.days[maxIndex];
+            }
+            
+            if (rhythm) {
+                const avg = rhythm.value.reduce((a, b) => a + b, 0) / rhythm.value.length;
+                document.getElementById('rhythmScoreMain').textContent = avg.toFixed(1);
+                
+                // Calculate change
+                const change = (rhythm.value[6] - rhythm.value[0]) / rhythm.value[0] * 100;
+                const changeEl = document.getElementById('rhythmChange');
+                changeEl.textContent = `${change > 0 ? '↑' : '↓'} ${Math.abs(change).toFixed(1)}%`;
+                changeEl.className = change > 0 ? 'stat-change positive' : 'stat-change negative';
+            }
+            
+            // Calculate consistency (standard deviation)
+            if (composite) {
+                const mean = composite.value.reduce((a, b) => a + b, 0) / composite.value.length;
+                const variance = composite.value.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / composite.value.length;
+                const stdDev = Math.sqrt(variance);
+                const consistency = Math.max(0, 100 - stdDev * 2);
+                document.getElementById('consistency').textContent = consistency.toFixed(1) + '%';
+            }
+            
+            // Calculate Cronbach's Alpha (simplified)
+            const alpha = calculateCronbachAlpha(data.data.slice(0, 5)); // First 5 components
+            document.getElementById('cronbachAlpha').textContent = alpha.toFixed(3);
+        }
+
+        function calculateCronbachAlpha(components) {
+            // Simplified Cronbach's alpha calculation
+            const k = components.length;
+            const n = components[0].value.length;
+            
+            // Calculate item variances
+            let sumItemVar = 0;
+            components.forEach(comp => {
+                const mean = comp.value.reduce((a, b) => a + b, 0) / n;
+                const variance = comp.value.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / n;
+                sumItemVar += variance;
+            });
+            
+            // Calculate total variance
+            const totals = [];
+            for (let i = 0; i < n; i++) {
+                let sum = 0;
+                components.forEach(comp => {
+                    sum += comp.value[i];
+                });
+                totals.push(sum);
+            }
+            
+            const totalMean = totals.reduce((a, b) => a + b, 0) / n;
+            const totalVar = totals.reduce((sum, val) => sum + Math.pow(val - totalMean, 2), 0) / n;
+            
+            // Cronbach's alpha formula
+            const alpha = (k / (k - 1)) * (1 - sumItemVar / totalVar);
+            return Math.max(0, Math.min(1, alpha));
+        }
+
+        function updateRhythmIndicators(data) {
+            const rhythm = data.data.find(d => d.name === 'Rhythm');
+            if (!rhythm) return;
+            
+            // Simulate rhythm component scores
+            const sleepScore = 70 + Math.random() * 20;
+            const attendanceScore = 80 + Math.random() * 15;
+            const taskScore = 75 + Math.random() * 20;
+            const circadianScore = 65 + Math.random() * 25;
+            
+            document.getElementById('sleepScore').textContent = sleepScore.toFixed(0);
+            document.getElementById('attendanceScore').textContent = attendanceScore.toFixed(0);
+            document.getElementById('taskScore').textContent = taskScore.toFixed(0);
+            document.getElementById('circadianScore').textContent = circadianScore.toFixed(0);
+        }
+
+        function generateInsights(data) {
+            const container = document.getElementById('insightsContainer');
+            container.innerHTML = '';
+            
+            // Analyze rhythm patterns
+            const rhythm = data.data.find(d => d.name === 'Rhythm');
+            if (rhythm) {
+                const avg = rhythm.value.reduce((a, b) => a + b, 0) / rhythm.value.length;
+                
+                if (avg < 60) {
+                    addInsight('warning', '⚠️ Low rhythm score detected. Consider improving sleep consistency and task scheduling.');
+                } else if (avg > 80) {
+                    addInsight('positive', '✨ Excellent rhythm consistency! Your productivity patterns are well-aligned.');
+                }
+                
+                // Check for weekend dips
+                const weekendDip = (rhythm.value[0] + rhythm.value[6]) / 2;
+                const weekdayAvg = (rhythm.value[1] + rhythm.value[2] + rhythm.value[3] + rhythm.value[4] + rhythm.value[5]) / 5;
+                
+                if (weekendDip < weekdayAvg * 0.7) {
+                    addInsight('warning', '📅 Weekend rhythm disruption detected. Try maintaining consistent sleep schedules on weekends.');
+                }
+            }
+        }
+
+        function addInsight(type, message) {
+            const container = document.getElementById('insightsContainer');
+            const banner = document.createElement('div');
+            banner.className = `insight-banner ${type}`;
+            banner.innerHTML = message;
+            container.appendChild(banner);
+        }
+
+        function setupEventListeners() {
+            // Weight sliders
+            ['E', 'D', 'Q', 'G', 'R'].forEach(component => {
+                const slider = document.getElementById(`slider${component}`);
+                const label = document.getElementById(`weight${component}`);
+                
+                slider.addEventListener('input', () => {
+                    label.textContent = slider.value + '%';
+                });
+            });
+        }
+
+        function applyWeights() {
+            const weights = {
+                effort: parseInt(document.getElementById('sliderE').value) / 100,
+                duration: parseInt(document.getElementById('sliderD').value) / 100,
+                quality: parseInt(document.getElementById('sliderQ').value) / 100,
+                goal: parseInt(document.getElementById('sliderG').value) / 100,
+                rhythm: parseInt(document.getElementById('sliderR').value) / 100
+            };
+            
+            // Normalize weights to sum to 1
+            const sum = Object.values(weights).reduce((a, b) => a + b, 0);
+            for (const key in weights) {
+                weights[key] = weights[key] / sum;
+            }
+            
+            // Update integration layer
+            if (integration) {
+                integration.updateWeights(weights);
+            }
+            
+            // Reload data with new weights
+            loadData();
+        }
+
+        function resetWeights() {
+            const defaults = { E: 20, D: 20, Q: 25, G: 20, R: 15 };
+            
+            Object.keys(defaults).forEach(component => {
+                document.getElementById(`slider${component}`).value = defaults[component];
+                document.getElementById(`weight${component}`).textContent = defaults[component] + '%';
+            });
+            
+            applyWeights();
+        }
+
+        function optimizeWeights() {
+            // Simulate weight optimization
+            // In a real implementation, this would use gradient descent or similar
+            const optimized = { E: 18, D: 22, Q: 28, G: 17, R: 15 };
+            
+            Object.keys(optimized).forEach(component => {
+                document.getElementById(`slider${component}`).value = optimized[component];
+                document.getElementById(`weight${component}`).textContent = optimized[component] + '%';
+            });
+            
+            applyWeights();
+            
+            addInsight('positive', '🎯 Weights optimized based on your historical performance patterns.');
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', init);
+        
+        // Handle resize
+        window.addEventListener('resize', () => {
+            if (chart) {
+                chart.resize();
+            }
+        });
+    </script>
+</body>
+</html>

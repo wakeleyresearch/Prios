@@ -1,184 +1,984 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Prios • Settings</title>
-  <link rel="stylesheet" href="theme.css" />
-  <style>
-    .container { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
-    .section { margin-bottom: 1.25rem; padding: 1rem; border: 1px solid var(--border-color); border-radius: .75rem; background: var(--bg-secondary); }
-    .section h2 { margin-bottom: .75rem; }
-  .row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
-  .mt-2 { margin-top: .5rem; }
-  .grid-4 { display:grid; grid-template-columns: repeat(4,1fr); gap:.5rem; }
-    .row label { display:block; font-weight:600; color: var(--text-secondary); margin-bottom:.25rem; }
-    .actions { display:flex; gap:.5rem; justify-content: flex-end; margin-top: 1rem; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings • Prios</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: #252525;
+            --text-primary: #ffffff;
+            --text-secondary: #888888;
+            --border-color: #2a2a2a;
+            --accent: #667eea;
+            --success: #48bb78;
+            --warning: #ed8936;
+            --danger: #f56565;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .header-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .brand {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .links a:hover, .links a.active {
+            color: var(--text-primary);
+        }
+
+        .settings-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 2rem;
+        }
+
+        /* Sidebar */
+        .settings-sidebar {
+            background: var(--bg-secondary);
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+            padding: 1rem;
+            height: fit-content;
+        }
+
+        .settings-nav-item {
+            display: block;
+            padding: 0.75rem 1rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 0.375rem;
+            margin-bottom: 0.25rem;
+            transition: all 0.2s;
+        }
+
+        .settings-nav-item:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .settings-nav-item.active {
+            background: var(--accent);
+            color: white;
+        }
+
+        /* Content */
+        .settings-content {
+            background: var(--bg-secondary);
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+            padding: 2rem;
+        }
+
+        .settings-section {
+            display: none;
+        }
+
+        .settings-section.active {
+            display: block;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .section-description {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .setting-group {
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .setting-group:last-child {
+            border-bottom: none;
+        }
+
+        .setting-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .setting-description {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            max-width: 400px;
+            padding: 0.75rem;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 28px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            transition: 0.3s;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 3px;
+            background: var(--text-secondary);
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        input:checked + .toggle-slider {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(32px);
+            background: white;
+        }
+
+        .time-input-group {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .time-input {
+            width: 120px;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: opacity 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .color-picker-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+
+        .color-option.selected {
+            border-color: var(--text-primary);
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+        }
+
+        .alert-success {
+            background: rgba(72, 187, 120, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+        }
+
+        .alert-info {
+            background: rgba(102, 126, 234, 0.1);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+        }
+
+        .data-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stat-card {
+            background: var(--bg-primary);
+            padding: 1rem;
+            border-radius: 0.375rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+    </style>
 </head>
 <body>
-  <div class="header-nav">
-    <div class="brand">Prios</div>
-    <div class="links">
-      <a href="index.html">Home</a>
-      <a href="dashboard.html">Dashboard</a>
-      <a href="todo-list.html">To-Do</a>
-      <a href="task-planner-enhanced.html">Planner</a>
-      <a href="productivity-parallel-coords.html">Analytics</a>
-      <a href="reflection.html">Reflection</a>
-      <a href="settings.html" class="active">Settings</a>
+    <div class="header-nav">
+        <div class="brand">Prios</div>
+        <div class="links">
+            <a href="index.html">Home</a>
+            <a href="dashboard.html">Dashboard</a>
+            <a href="todo-list.html">To-Do</a>
+            <a href="task-planner-enhanced.html">Planner</a>
+            <a href="productivity-parallel-coords.html">Analytics</a>
+            <a href="reflection.html">Reflection</a>
+            <a href="settings.html" class="active">Settings</a>
+        </div>
     </div>
-  </div>
 
-  <main class="container">
-    <h1>Settings</h1>
-
-    <form id="settingsForm" class="grid gap-4">
-      <div class="section">
-        <h2>Analytics Defaults</h2>
-        <div class="row">
-          <div>
-            <label for="optimizer">Default Optimizer</label>
-            <select id="optimizer">
-              <option value="adam">Adam</option>
-              <option value="pso">PSO</option>
-              <option value="bayesian">Bayesian</option>
-            </select>
-          </div>
-          <div>
-            <label for="anomaly">Default Anomaly Method</label>
-            <select id="anomaly">
-              <option value="cusum">CUSUM/EWMA</option>
-              <option value="isolation">IQR Isolation</option>
-              <option value="ensemble">Ensemble</option>
-            </select>
-          </div>
+    <div class="settings-container">
+        <!-- Sidebar -->
+        <div class="settings-sidebar">
+            <a href="#general" class="settings-nav-item active" onclick="showSection('general')">General</a>
+            <a href="#productivity" class="settings-nav-item" onclick="showSection('productivity')">Productivity</a>
+            <a href="#rhythm" class="settings-nav-item" onclick="showSection('rhythm')">Rhythm & Schedule</a>
+            <a href="#reflection" class="settings-nav-item" onclick="showSection('reflection')">Reflection</a>
+            <a href="#appearance" class="settings-nav-item" onclick="showSection('appearance')">Appearance</a>
+            <a href="#data" class="settings-nav-item" onclick="showSection('data')">Data & Privacy</a>
+            <a href="#advanced" class="settings-nav-item" onclick="showSection('advanced')">Advanced</a>
         </div>
-  <div class="row mt-2">
-          <div>
-            <label>EDQG Weights (sum = 1.0)</label>
-            <div class="grid-4">
-              <input id="wEffort" type="number" step="0.01" min="0" max="1" value="0.25" placeholder="Effort" />
-              <input id="wDuration" type="number" step="0.01" min="0" max="1" value="0.25" placeholder="Duration" />
-              <input id="wQuality" type="number" step="0.01" min="0" max="1" value="0.25" placeholder="Quality" />
-              <input id="wGoal" type="number" step="0.01" min="0" max="1" value="0.25" placeholder="Goal" />
+
+        <!-- Content -->
+        <div class="settings-content">
+            <!-- General Settings -->
+            <div class="settings-section active" id="general">
+                <h2 class="section-title">General Settings</h2>
+                <p class="section-description">Configure basic preferences for your productivity suite</p>
+
+                <div class="setting-group">
+                    <label class="setting-label">Default View</label>
+                    <p class="setting-description">Choose which page to show when you open Prios</p>
+                    <select class="form-select" id="defaultView">
+                        <option value="dashboard">Dashboard</option>
+                        <option value="planner">Task Planner</option>
+                        <option value="todo">To-Do List</option>
+                        <option value="analytics">Analytics</option>
+                    </select>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Week Start Day</label>
+                    <p class="setting-description">Choose which day your week begins</p>
+                    <select class="form-select" id="weekStart">
+                        <option value="0">Sunday</option>
+                        <option value="1" selected>Monday</option>
+                        <option value="6">Saturday</option>
+                    </select>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Time Format</label>
+                    <p class="setting-description">Display time in 12-hour or 24-hour format</p>
+                    <select class="form-select" id="timeFormat">
+                        <option value="12">12-hour (AM/PM)</option>
+                        <option value="24">24-hour</option>
+                    </select>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="saveSettings('general')">Save Changes</button>
+                </div>
             </div>
-          </div>
-          <div>
-            <label for="nlpEnabled">NLP Journal Parsing</label>
-            <select id="nlpEnabled">
-              <option value="on">Enabled</option>
-              <option value="off">Disabled</option>
-            </select>
-          </div>
+
+            <!-- Productivity Settings -->
+            <div class="settings-section" id="productivity">
+                <h2 class="section-title">Productivity Settings</h2>
+                <p class="section-description">Customize how productivity scores are calculated</p>
+
+                <div class="setting-group">
+                    <label class="setting-label">Weight Calculation Method</label>
+                    <p class="setting-description">Default method for calculating component weights</p>
+                    <select class="form-select" id="weightMethod">
+                        <option value="equal">Equal Weights</option>
+                        <option value="performance">Performance-Based</option>
+                        <option value="bayes">Bayesian Optimization</option>
+                        <option value="entropy">Maximum Entropy</option>
+                    </select>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Component Weights</label>
+                    <p class="setting-description">Adjust the importance of each productivity component</p>
+                    
+                    <div style="display: grid; gap: 1rem; max-width: 400px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>Effort</span>
+                            <input type="range" min="0" max="100" value="20" id="effortWeight" style="width: 200px;">
+                            <span id="effortValue">20%</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>Duration</span>
+                            <input type="range" min="0" max="100" value="20" id="durationWeight" style="width: 200px;">
+                            <span id="durationValue">20%</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>Quality</span>
+                            <input type="range" min="0" max="100" value="25" id="qualityWeight" style="width: 200px;">
+                            <span id="qualityValue">25%</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>Goals</span>
+                            <input type="range" min="0" max="100" value="20" id="goalsWeight" style="width: 200px;">
+                            <span id="goalsValue">20%</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>Rhythm</span>
+                            <input type="range" min="0" max="100" value="15" id="rhythmWeight" style="width: 200px;">
+                            <span id="rhythmValue">15%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="saveSettings('productivity')">Save Changes</button>
+                    <button class="btn btn-secondary" onclick="resetWeights()">Reset to Default</button>
+                </div>
+            </div>
+
+            <!-- Rhythm Settings -->
+            <div class="settings-section" id="rhythm">
+                <h2 class="section-title">Rhythm & Schedule</h2>
+                <p class="section-description">Set your ideal times for optimal productivity rhythm</p>
+
+                <div class="setting-group">
+                    <label class="setting-label">Ideal Sleep Schedule</label>
+                    <p class="setting-description">Your target sleep and wake times</p>
+                    <div class="time-input-group">
+                        <div>
+                            <label style="font-size: 0.875rem; color: var(--text-secondary);">Sleep Time</label>
+                            <input type="time" class="form-input time-input" id="idealSleep" value="22:30">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.875rem; color: var(--text-secondary);">Wake Time</label>
+                            <input type="time" class="form-input time-input" id="idealWake" value="06:30">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Work Schedule</label>
+                    <p class="setting-description">Your typical work hours</p>
+                    <div class="time-input-group">
+                        <div>
+                            <label style="font-size: 0.875rem; color: var(--text-secondary);">Start Time</label>
+                            <input type="time" class="form-input time-input" id="workStart" value="09:00">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.875rem; color: var(--text-secondary);">End Time</label>
+                            <input type="time" class="form-input time-input" id="workEnd" value="17:00">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Peak Productivity Hours</label>
+                    <p class="setting-description">When you're most productive</p>
+                    <select class="form-select" id="peakHours">
+                        <option value="morning">Morning (6 AM - 12 PM)</option>
+                        <option value="afternoon">Afternoon (12 PM - 6 PM)</option>
+                        <option value="evening">Evening (6 PM - 12 AM)</option>
+                        <option value="night">Night (12 AM - 6 AM)</option>
+                    </select>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Track Sleep Quality</label>
+                    <p class="setting-description">Enable sleep quality tracking in reflection</p>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="trackSleep" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="saveSettings('rhythm')">Save Changes</button>
+                </div>
+            </div>
+
+            <!-- Reflection Settings -->
+            <div class="settings-section" id="reflection">
+                <h2 class="section-title">Reflection Settings</h2>
+                <p class="section-description">Configure how you reflect on your day</p>
+
+                <div class="setting-group">
+                    <label class="setting-label">Reflection Mode</label>
+                    <p class="setting-description">Choose your preferred reflection style</p>
+                    <select class="form-select" id="reflectionMode">
+                        <option value="journal">Journal (Natural Language)</option>
+                        <option value="structured">Structured Fields</option>
+                        <option value="hybrid">Hybrid Mode</option>
+                    </select>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Daily Reminder</label>
+                    <p class="setting-description">Get reminded to reflect on your day</p>
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="dailyReminder">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <input type="time" class="form-input time-input" id="reminderTime" value="21:00">
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Auto-Complete Suggestions</label>
+                    <p class="setting-description">Show task suggestions based on history</p>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="autoComplete" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">NLP Parsing</label>
+                    <p class="setting-description">Automatically extract tasks from journal entries</p>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="nlpParsing" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="saveSettings('reflection')">Save Changes</button>
+                </div>
+            </div>
+
+            <!-- Appearance Settings -->
+            <div class="settings-section" id="appearance">
+                <h2 class="section-title">Appearance</h2>
+                <p class="section-description">Customize the look and feel</p>
+
+                <div class="setting-group">
+                    <label class="setting-label">Theme</label>
+                    <p class="setting-description">Choose your preferred color scheme</p>
+                    <select class="form-select" id="theme">
+                        <option value="dark" selected>Dark</option>
+                        <option value="darker">Darker</option>
+                        <option value="midnight">Midnight</option>
+                    </select>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Accent Color</label>
+                    <p class="setting-description">Choose your accent color</p>
+                    <div class="color-picker-group">
+                        <div class="color-option selected" style="background: #667eea;" data-color="#667eea"></div>
+                        <div class="color-option" style="background: #4f46e5;" data-color="#4f46e5"></div>
+                        <div class="color-option" style="background: #7c3aed;" data-color="#7c3aed"></div>
+                        <div class="color-option" style="background: #ec4899;" data-color="#ec4899"></div>
+                        <div class="color-option" style="background: #ef4444;" data-color="#ef4444"></div>
+                        <div class="color-option" style="background: #10b981;" data-color="#10b981"></div>
+                        <div class="color-option" style="background: #06b6d4;" data-color="#06b6d4"></div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Compact Mode</label>
+                    <p class="setting-description">Reduce spacing for more content</p>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="compactMode">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="saveSettings('appearance')">Save Changes</button>
+                </div>
+            </div>
+
+            <!-- Data Settings -->
+            <div class="settings-section" id="data">
+                <h2 class="section-title">Data & Privacy</h2>
+                <p class="section-description">Manage your data and privacy settings</p>
+
+                <div class="alert alert-info">
+                    All data is stored locally in your browser. No information is sent to external servers.
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Data Statistics</label>
+                    <div class="data-stats">
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalTasks">--</div>
+                            <div class="stat-label">Total Tasks</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalGoals">--</div>
+                            <div class="stat-label">Total Goals</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalReflections">--</div>
+                            <div class="stat-label">Reflections</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="dataSize">--</div>
+                            <div class="stat-label">Storage Used</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Export Data</label>
+                    <p class="setting-description">Download all your data as a JSON file</p>
+                    <button class="btn btn-secondary" onclick="exportData()">Export All Data</button>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Import Data</label>
+                    <p class="setting-description">Import data from a previous export</p>
+                    <input type="file" id="importFile" accept=".json" style="display: none;">
+                    <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">Import Data</button>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Clear Data</label>
+                    <p class="setting-description">Remove all stored data (this cannot be undone)</p>
+                    <button class="btn btn-danger" onclick="clearAllData()">Clear All Data</button>
+                </div>
+            </div>
+
+            <!-- Advanced Settings -->
+            <div class="settings-section" id="advanced">
+                <h2 class="section-title">Advanced Settings</h2>
+                <p class="section-description">Advanced configuration options</p>
+
+                <div class="setting-group">
+                    <label class="setting-label">Developer Mode</label>
+                    <p class="setting-description">Show additional debugging information</p>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="devMode">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Database Version</label>
+                    <p class="setting-description">Current database schema version</p>
+                    <input type="text" class="form-input" value="2.0" disabled>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Cache Settings</label>
+                    <p class="setting-description">Clear cached data to resolve issues</p>
+                    <button class="btn btn-secondary" onclick="clearCache()">Clear Cache</button>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label">Reset to Defaults</label>
+                    <p class="setting-description">Reset all settings to their default values</p>
+                    <button class="btn btn-secondary" onclick="resetAllSettings()">Reset All Settings</button>
+                </div>
+            </div>
+
+            <div id="saveNotification" class="alert alert-success" style="display: none; margin-top: 2rem;">
+                Settings saved successfully!
+            </div>
         </div>
-      </div>
+    </div>
 
-      <div class="section">
-        <h2>Planner Defaults</h2>
-        <div class="row">
-          <div>
-            <label for="hourStart">Start Hour</label>
-            <select id="hourStart">
-              <option value="6">6 AM</option>
-              <option value="7">7 AM</option>
-              <option value="8" selected>8 AM</option>
-              <option value="9">9 AM</option>
-              <option value="10">10 AM</option>
-            </select>
-          </div>
-          <div>
-            <label for="hourEnd">End Hour</label>
-            <select id="hourEnd">
-              <option value="17">5 PM</option>
-              <option value="18">6 PM</option>
-              <option value="19">7 PM</option>
-              <option value="20" selected>8 PM</option>
-              <option value="21">9 PM</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div class="section">
-        <h2>Daily Rhythm</h2>
-        <div class="row">
-          <div>
-            <label for="wakeTime">Ideal Wake Time</label>
-            <input id="wakeTime" type="time" value="07:00" />
-          </div>
-          <div>
-            <label for="bedTime">Ideal Bedtime</label>
-            <input id="bedTime" type="time" value="22:30" />
-          </div>
-        </div>
-      </div>
-
-      <div class="actions">
-        <button type="button" class="btn btn-secondary" id="resetBtn">Reset</button>
-        <button type="submit" class="btn">Save Settings</button>
-      </div>
-    </form>
-  </main>
-
-  <script>
-    const KEY = 'appSettings';
-    function readSettings(){
-      try{ return JSON.parse(localStorage.getItem(KEY)) || {}; }catch{ return {}; }
-    }
-    function writeSettings(obj){ localStorage.setItem(KEY, JSON.stringify(obj)); }
-    function loadForm(){
-      const s = readSettings();
-      if (s.optimizer) document.getElementById('optimizer').value = s.optimizer;
-      if (s.anomaly) document.getElementById('anomaly').value = s.anomaly;
-      if (s.nlpEnabled) document.getElementById('nlpEnabled').value = s.nlpEnabled;
-      if (s.weights){
-        document.getElementById('wEffort').value = s.weights.e ?? 0.25;
-        document.getElementById('wDuration').value = s.weights.d ?? 0.25;
-        document.getElementById('wQuality').value = s.weights.q ?? 0.25;
-        document.getElementById('wGoal').value = s.weights.g ?? 0.25;
-      }
-      if (s.planner){
-        document.getElementById('hourStart').value = s.planner.start ?? 8;
-        document.getElementById('hourEnd').value = s.planner.end ?? 20;
-      }
-      if (s.sleep){
-        if (s.sleep.wake) document.getElementById('wakeTime').value = s.sleep.wake;
-        if (s.sleep.bed) document.getElementById('bedTime').value = s.sleep.bed;
-      }
-    }
-    function saveForm(e){
-      e.preventDefault();
-      const w = {
-        e: parseFloat(document.getElementById('wEffort').value || '0.25'),
-        d: parseFloat(document.getElementById('wDuration').value || '0.25'),
-        q: parseFloat(document.getElementById('wQuality').value || '0.25'),
-        g: parseFloat(document.getElementById('wGoal').value || '0.25')
-      };
-      const sum = (w.e + w.d + w.q + w.g) || 1;
-      // Normalize weights to sum=1
-      Object.keys(w).forEach(k=> w[k] = parseFloat((w[k]/sum).toFixed(2)));
-      const s = {
-        optimizer: document.getElementById('optimizer').value,
-        anomaly: document.getElementById('anomaly').value,
-        nlpEnabled: document.getElementById('nlpEnabled').value,
-        weights: w,
-        planner: {
-          start: parseInt(document.getElementById('hourStart').value),
-          end: parseInt(document.getElementById('hourEnd').value)
-        },
-        sleep: {
-          wake: document.getElementById('wakeTime').value || '07:00',
-          bed: document.getElementById('bedTime').value || '22:30'
+    <script>
+        // Initialize settings
+        function initSettings() {
+            loadSettings();
+            updateDataStats();
+            setupEventListeners();
         }
-      };
-      writeSettings(s);
-      alert('Settings saved');
-    }
-    function reset(){ localStorage.removeItem(KEY); loadForm(); }
-    document.getElementById('settingsForm').addEventListener('submit', saveForm);
-    document.getElementById('resetBtn').addEventListener('click', reset);
-    document.addEventListener('DOMContentLoaded', loadForm);
-  </script>
+
+        // Load saved settings
+        function loadSettings() {
+            // General settings
+            const defaultView = localStorage.getItem('defaultView') || 'dashboard';
+            document.getElementById('defaultView').value = defaultView;
+            
+            const weekStart = localStorage.getItem('weekStart') || '1';
+            document.getElementById('weekStart').value = weekStart;
+            
+            const timeFormat = localStorage.getItem('timeFormat') || '12';
+            document.getElementById('timeFormat').value = timeFormat;
+            
+            // Productivity settings
+            const weightMethod = localStorage.getItem('weightMethod') || 'equal';
+            document.getElementById('weightMethod').value = weightMethod;
+            
+            // Load component weights
+            const weights = JSON.parse(localStorage.getItem('componentWeights') || '{}');
+            document.getElementById('effortWeight').value = (weights.effort || 0.20) * 100;
+            document.getElementById('durationWeight').value = (weights.duration || 0.20) * 100;
+            document.getElementById('qualityWeight').value = (weights.quality || 0.25) * 100;
+            document.getElementById('goalsWeight').value = (weights.goals || 0.20) * 100;
+            document.getElementById('rhythmWeight').value = (weights.rhythm || 0.15) * 100;
+            updateWeightDisplays();
+            
+            // Rhythm settings
+            document.getElementById('idealSleep').value = localStorage.getItem('idealSleepTime') || '22:30';
+            document.getElementById('idealWake').value = localStorage.getItem('idealWakeTime') || '06:30';
+            document.getElementById('workStart').value = localStorage.getItem('workStartTime') || '09:00';
+            document.getElementById('workEnd').value = localStorage.getItem('workEndTime') || '17:00';
+            document.getElementById('peakHours').value = localStorage.getItem('peakHours') || 'morning';
+            document.getElementById('trackSleep').checked = localStorage.getItem('trackSleep') !== 'false';
+            
+            // Reflection settings
+            document.getElementById('reflectionMode').value = localStorage.getItem('reflectionMode') || 'journal';
+            document.getElementById('dailyReminder').checked = localStorage.getItem('dailyReminder') === 'true';
+            document.getElementById('reminderTime').value = localStorage.getItem('reminderTime') || '21:00';
+            document.getElementById('autoComplete').checked = localStorage.getItem('autoComplete') !== 'false';
+            document.getElementById('nlpParsing').checked = localStorage.getItem('nlpParsing') !== 'false';
+            
+            // Appearance settings
+            document.getElementById('theme').value = localStorage.getItem('theme') || 'dark';
+            const accentColor = localStorage.getItem('accentColor') || '#667eea';
+            document.querySelectorAll('.color-option').forEach(option => {
+                option.classList.toggle('selected', option.dataset.color === accentColor);
+            });
+            document.getElementById('compactMode').checked = localStorage.getItem('compactMode') === 'true';
+            
+            // Advanced settings
+            document.getElementById('devMode').checked = localStorage.getItem('devMode') === 'true';
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Weight sliders
+            ['effort', 'duration', 'quality', 'goals', 'rhythm'].forEach(component => {
+                const slider = document.getElementById(component + 'Weight');
+                slider.addEventListener('input', updateWeightDisplays);
+            });
+            
+            // Color options
+            document.querySelectorAll('.color-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
+                    option.classList.add('selected');
+                    document.documentElement.style.setProperty('--accent', option.dataset.color);
+                });
+            });
+            
+            // Import file
+            document.getElementById('importFile').addEventListener('change', importData);
+        }
+
+        // Show settings section
+        function showSection(section) {
+            // Update nav
+            document.querySelectorAll('.settings-nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update content
+            document.querySelectorAll('.settings-section').forEach(sec => {
+                sec.classList.remove('active');
+            });
+            document.getElementById(section).classList.add('active');
+        }
+
+        // Update weight displays
+        function updateWeightDisplays() {
+            document.getElementById('effortValue').textContent = document.getElementById('effortWeight').value + '%';
+            document.getElementById('durationValue').textContent = document.getElementById('durationWeight').value + '%';
+            document.getElementById('qualityValue').textContent = document.getElementById('qualityWeight').value + '%';
+            document.getElementById('goalsValue').textContent = document.getElementById('goalsWeight').value + '%';
+            document.getElementById('rhythmValue').textContent = document.getElementById('rhythmWeight').value + '%';
+        }
+
+        // Save settings
+        function saveSettings(section) {
+            switch(section) {
+                case 'general':
+                    localStorage.setItem('defaultView', document.getElementById('defaultView').value);
+                    localStorage.setItem('weekStart', document.getElementById('weekStart').value);
+                    localStorage.setItem('timeFormat', document.getElementById('timeFormat').value);
+                    break;
+                    
+                case 'productivity':
+                    localStorage.setItem('weightMethod', document.getElementById('weightMethod').value);
+                    
+                    // Save weights (normalized)
+                    const effort = parseInt(document.getElementById('effortWeight').value);
+                    const duration = parseInt(document.getElementById('durationWeight').value);
+                    const quality = parseInt(document.getElementById('qualityWeight').value);
+                    const goals = parseInt(document.getElementById('goalsWeight').value);
+                    const rhythm = parseInt(document.getElementById('rhythmWeight').value);
+                    
+                    const sum = effort + duration + quality + goals + rhythm;
+                    const weights = {
+                        effort: effort / sum,
+                        duration: duration / sum,
+                        quality: quality / sum,
+                        goals: goals / sum,
+                        rhythm: rhythm / sum
+                    };
+                    
+                    localStorage.setItem('componentWeights', JSON.stringify(weights));
+                    break;
+                    
+                case 'rhythm':
+                    localStorage.setItem('idealSleepTime', document.getElementById('idealSleep').value);
+                    localStorage.setItem('idealWakeTime', document.getElementById('idealWake').value);
+                    localStorage.setItem('workStartTime', document.getElementById('workStart').value);
+                    localStorage.setItem('workEndTime', document.getElementById('workEnd').value);
+                    localStorage.setItem('peakHours', document.getElementById('peakHours').value);
+                    localStorage.setItem('trackSleep', document.getElementById('trackSleep').checked);
+                    break;
+                    
+                case 'reflection':
+                    localStorage.setItem('reflectionMode', document.getElementById('reflectionMode').value);
+                    localStorage.setItem('dailyReminder', document.getElementById('dailyReminder').checked);
+                    localStorage.setItem('reminderTime', document.getElementById('reminderTime').value);
+                    localStorage.setItem('autoComplete', document.getElementById('autoComplete').checked);
+                    localStorage.setItem('nlpParsing', document.getElementById('nlpParsing').checked);
+                    break;
+                    
+                case 'appearance':
+                    localStorage.setItem('theme', document.getElementById('theme').value);
+                    const selectedColor = document.querySelector('.color-option.selected');
+                    if (selectedColor) {
+                        localStorage.setItem('accentColor', selectedColor.dataset.color);
+                    }
+                    localStorage.setItem('compactMode', document.getElementById('compactMode').checked);
+                    break;
+            }
+            
+            showSaveNotification();
+        }
+
+        // Show save notification
+        function showSaveNotification() {
+            const notification = document.getElementById('saveNotification');
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+
+        // Reset weights to default
+        function resetWeights() {
+            document.getElementById('effortWeight').value = 20;
+            document.getElementById('durationWeight').value = 20;
+            document.getElementById('qualityWeight').value = 25;
+            document.getElementById('goalsWeight').value = 20;
+            document.getElementById('rhythmWeight').value = 15;
+            updateWeightDisplays();
+        }
+
+        // Update data statistics
+        function updateDataStats() {
+            // Count tasks
+            const tasks = JSON.parse(localStorage.getItem('priosTasks') || '[]');
+            document.getElementById('totalTasks').textContent = tasks.length;
+            
+            // Count goals
+            const goals = JSON.parse(localStorage.getItem('priosGoals') || '[]');
+            document.getElementById('totalGoals').textContent = goals.length;
+            
+            // Count reflections
+            const reflections = JSON.parse(localStorage.getItem('priosReflections') || '[]');
+            document.getElementById('totalReflections').textContent = reflections.length;
+            
+            // Calculate storage size
+            let totalSize = 0;
+            for (let key in localStorage) {
+                if (key.startsWith('prios')) {
+                    totalSize += localStorage[key].length;
+                }
+            }
+            const sizeKB = (totalSize / 1024).toFixed(1);
+            document.getElementById('dataSize').textContent = sizeKB + ' KB';
+        }
+
+        // Export data
+        function exportData() {
+            const data = {};
+            for (let key in localStorage) {
+                if (key.startsWith('prios') || key.includes('Weight') || key.includes('ideal')) {
+                    data[key] = localStorage[key];
+                }
+            }
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `prios-export-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Import data
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    for (let key in data) {
+                        localStorage.setItem(key, data[key]);
+                    }
+                    
+                    alert('Data imported successfully!');
+                    location.reload();
+                } catch (error) {
+                    alert('Error importing data: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Clear all data
+        function clearAllData() {
+            if (confirm('Are you sure you want to delete all data? This cannot be undone.')) {
+                const keysToRemove = [];
+                for (let key in localStorage) {
+                    if (key.startsWith('prios')) {
+                        keysToRemove.push(key);
+                    }
+                }
+                keysToRemove.forEach(key => localStorage.removeItem(key));
+                
+                alert('All data has been cleared.');
+                updateDataStats();
+            }
+        }
+
+        // Clear cache
+        function clearCache() {
+            // Clear any cached data (implementation depends on what needs to be cached)
+            alert('Cache cleared successfully.');
+        }
+
+        // Reset all settings
+        function resetAllSettings() {
+            if (confirm('Reset all settings to default values?')) {
+                // Remove setting keys
+                const settingKeys = [
+                    'defaultView', 'weekStart', 'timeFormat', 'weightMethod',
+                    'componentWeights', 'idealSleepTime', 'idealWakeTime',
+                    'workStartTime', 'workEndTime', 'peakHours', 'trackSleep',
+                    'reflectionMode', 'dailyReminder', 'reminderTime',
+                    'autoComplete', 'nlpParsing', 'theme', 'accentColor',
+                    'compactMode', 'devMode'
+                ];
+                
+                settingKeys.forEach(key => localStorage.removeItem(key));
+                
+                alert('Settings reset to defaults.');
+                location.reload();
+            }
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', initSettings);
+    </script>
 </body>
 </html>

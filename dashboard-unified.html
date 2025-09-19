@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified Productivity Dashboard with Rhythm</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        .dashboard-container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .dashboard-header {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left h1 {
+            font-size: 2rem;
+            color: #2D3748;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-left .subtitle {
+            color: #718096;
+        }
+
+        .composite-score-display {
+            text-align: center;
+            padding: 1rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 1rem;
+            color: white;
+            min-width: 150px;
+        }
+
+        .composite-score-display .label {
+            font-size: 0.875rem;
+            opacity: 0.9;
+            margin-bottom: 0.5rem;
+        }
+
+        .composite-score-display .value {
+            font-size: 3rem;
+            font-weight: bold;
+        }
+
+        .composite-score-display .trend {
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-card {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .dashboard-card h2 {
+            font-size: 1.25rem;
+            color: #2D3748;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-full-width {
+            grid-column: span 3;
+        }
+
+        .card-two-thirds {
+            grid-column: span 2;
+        }
+
+        /* Component Scores Grid */
+        .component-scores {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1rem;
+        }
+
+        .component-card {
+            background: linear-gradient(135deg, #f6f6f6, #ffffff);
+            padding: 1rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .component-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .component-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+        }
+
+        .component-card.effort::before { background: #FF6B6B; }
+        .component-card.duration::before { background: #4ECDC4; }
+        .component-card.quality::before { background: #45B7D1; }
+        .component-card.goals::before { background: #96CEB4; }
+        .component-card.rhythm::before { background: #DDA0DD; }
+
+        .component-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .component-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2D3748;
+            margin-bottom: 0.25rem;
+        }
+
+        .component-label {
+            color: #718096;
+            font-size: 0.875rem;
+        }
+
+        .component-weight {
+            font-size: 0.75rem;
+            color: #A0AEC0;
+            margin-top: 0.5rem;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        .action-btn {
+            padding: 1rem;
+            border: 2px dashed #CBD5E0;
+            background: #F7FAFC;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .action-btn:hover {
+            border-color: #667eea;
+            background: white;
+            transform: scale(1.05);
+        }
+
+        .action-btn .icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .action-btn .text {
+            color: #4A5568;
+            font-size: 0.875rem;
+        }
+
+        /* Rhythm Insights */
+        .rhythm-insights {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .insight-card {
+            padding: 1rem;
+            background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .insight-card.positive {
+            background: linear-gradient(135deg, #D1FAE5, #A7F3D0);
+        }
+
+        .insight-card.warning {
+            background: linear-gradient(135deg, #FED7AA, #FDBA74);
+        }
+
+        .insight-icon {
+            font-size: 1.5rem;
+        }
+
+        .insight-text {
+            flex: 1;
+            color: #374151;
+            font-size: 0.875rem;
+        }
+
+        /* Charts */
+        .chart-container {
+            height: 300px;
+            margin-top: 1rem;
+        }
+
+        .mini-chart {
+            height: 150px;
+        }
+
+        /* Sleep Pattern Indicator */
+        .sleep-pattern {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 1rem;
+            background: #F9FAFB;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .sleep-time {
+            text-align: center;
+        }
+
+        .sleep-time .icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .sleep-time .time {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #2D3748;
+        }
+
+        .sleep-time .label {
+            font-size: 0.75rem;
+            color: #718096;
+        }
+
+        /* Task Timeline */
+        .task-timeline {
+            margin-top: 1rem;
+        }
+
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem;
+            border-left: 3px solid #E5E7EB;
+            margin-left: 1rem;
+            position: relative;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -7px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: white;
+            border: 3px solid #667eea;
+        }
+
+        .timeline-item.completed::before {
+            background: #10B981;
+        }
+
+        .timeline-item.late::before {
+            background: #F59E0B;
+        }
+
+        .timeline-time {
+            font-size: 0.875rem;
+            color: #718096;
+            min-width: 60px;
+        }
+
+        .timeline-content {
+            flex: 1;
+        }
+
+        .timeline-title {
+            font-weight: 600;
+            color: #2D3748;
+            font-size: 0.875rem;
+        }
+
+        .timeline-meta {
+            font-size: 0.75rem;
+            color: #A0AEC0;
+        }
+
+        /* Floating Action Button */
+        .fab {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s;
+            z-index: 1000;
+        }
+
+        .fab:hover {
+            transform: scale(1.1);
+        }
+
+        /* Loading State */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #E5E7EB;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .card-full-width {
+                grid-column: span 2;
+            }
+            
+            .card-two-thirds {
+                grid-column: span 2;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .card-full-width,
+            .card-two-thirds {
+                grid-column: span 1;
+            }
+            
+            .component-scores {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .quick-actions {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <div class="dashboard-header">
+            <div class="header-left">
+                <h1>🎯 Productivity Dashboard</h1>
+                <div class="subtitle">
+                    <span id="currentDate"></span> • 
+                    <span id="greeting"></span>
+                </div>
+            </div>
+            <div class="composite-score-display">
+                <div class="label">Composite Score</div>
+                <div class="value" id="compositeScore">--</div>
+                <div class="trend" id="scoreTrend">↑ 5.2%</div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard Grid -->
+        <div class="dashboard-grid">
+            <!-- Component Scores -->
+            <div class="dashboard-card card-full-width">
+                <h2>📊 Productivity Components</h2>
+                <div class="component-scores">
+                    <div class="component-card effort" onclick="showComponentDetails('effort')">
+                        <div class="component-icon">💪</div>
+                        <div class="component-value" id="effortScore">--</div>
+                        <div class="component-label">Effort</div>
+                        <div class="component-weight">20% weight</div>
+                    </div>
+                    
+                    <div class="component-card duration" onclick="showComponentDetails('duration')">
+                        <div class="component-icon">⏱️</div>
+                        <div class="component-value" id="durationScore">--</div>
+                        <div class="component-label">Duration</div>
+                        <div class="component-weight">20% weight</div>
+                    </div>
+                    
+                    <div class="component-card quality" onclick="showComponentDetails('quality')">
+                        <div class="component-icon">✨</div>
+                        <div class="component-value" id="qualityScore">--</div>
+                        <div class="component-label">Quality</div>
+                        <div class="component-weight">25% weight</div>
+                    </div>
+                    
+                    <div class="component-card goals" onclick="showComponentDetails('goals')">
+                        <div class="component-icon">🎯</div>
+                        <div class="component-value" id="goalsScore">--</div>
+                        <div class="component-label">Goals</div>
+                        <div class="component-weight">20% weight</div>
+                    </div>
+                    
+                    <div class="component-card rhythm" onclick="showComponentDetails('rhythm')">
+                        <div class="component-icon">🎵</div>
+                        <div class="component-value" id="rhythmScore">--</div>
+                        <div class="component-label">Rhythm</div>
+                        <div class="component-weight">15% weight</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Today's Rhythm -->
+            <div class="dashboard-card">
+                <h2>🌅 Today's Rhythm</h2>
+                <div class="sleep-pattern">
+                    <div class="sleep-time">
+                        <div class="icon">🛏️</div>
+                        <div class="time" id="lastSleep">--:--</div>
+                        <div class="label">Sleep</div>
+                    </div>
+                    <div class="sleep-time">
+                        <div class="icon">☀️</div>
+                        <div class="time" id="lastWake">--:--</div>
+                        <div class="label">Wake</div>
+                    </div>
+                    <div class="sleep-time">
+                        <div class="icon">⏰</div>
+                        <div class="time" id="sleepDuration">--h</div>
+                        <div class="label">Duration</div>
+                    </div>
+                </div>
+                <div class="rhythm-insights">
+                    <div class="insight-card positive" id="rhythmInsight1">
+                        <div class="insight-icon">✓</div>
+                        <div class="insight-text">On track with ideal sleep schedule</div>
+                    </div>
+                    <div class="insight-card" id="rhythmInsight2">
+                        <div class="insight-icon">💡</div>
+                        <div class="insight-text">3-day consistency streak</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="dashboard-card">
+                <h2>⚡ Quick Actions</h2>
+                <div class="quick-actions">
+                    <div class="action-btn" onclick="trackSleep()">
+                        <div class="icon">🌙</div>
+                        <div class="text">Track Sleep</div>
+                    </div>
+                    <div class="action-btn" onclick="addTask()">
+                        <div class="icon">✅</div>
+                        <div class="text">Add Task</div>
+                    </div>
+                    <div class="action-btn" onclick="logActivity()">
+                        <div class="icon">📝</div>
+                        <div class="text">Log Activity</div>
+                    </div>
+                    <div class="action-btn" onclick="viewAnalytics()">
+                        <div class="icon">📊</div>
+                        <div class="text">Analytics</div>
+                    </div>
+                    <div class="action-btn" onclick="setGoal()">
+                        <div class="icon">🎯</div>
+                        <div class="text">Set Goal</div>
+                    </div>
+                    <div class="action-btn" onclick="viewInsights()">
+                        <div class="icon">💡</div>
+                        <div class="text">Insights</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Weekly Trend -->
+            <div class="dashboard-card card-two-thirds">
+                <h2>📈 Weekly Productivity Trend</h2>
+                <div class="chart-container" id="weeklyTrendChart"></div>
+            </div>
+
+            <!-- Today's Tasks -->
+            <div class="dashboard-card">
+                <h2>📋 Today's Tasks</h2>
+                <div class="task-timeline" id="taskTimeline">
+                    <div class="timeline-item completed">
+                        <div class="timeline-time">09:00</div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">Morning Standup</div>
+                            <div class="timeline-meta">Completed on time • High priority</div>
+                        </div>
+                    </div>
+                    <div class="timeline-item late">
+                        <div class="timeline-time">10:30</div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">Code Review</div>
+                            <div class="timeline-meta">15 min late • Medium priority</div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">14:00</div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">Team Meeting</div>
+                            <div class="timeline-meta">Upcoming • High priority</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rhythm Patterns -->
+            <div class="dashboard-card">
+                <h2>🔄 Rhythm Patterns</h2>
+                <div class="chart-container mini-chart" id="rhythmPatternsChart"></div>
+            </div>
+
+            <!-- Component Distribution -->
+            <div class="dashboard-card">
+                <h2>🎨 Component Distribution</h2>
+                <div class="chart-container mini-chart" id="componentDistChart"></div>
+            </div>
+        </div>
+
+        <!-- Floating Action Button -->
+        <button class="fab" onclick="openQuickCapture()">+</button>
+    </div>
+
+    <!-- Scripts -->
+    <script src="rhythm-analyzer.js"></script>
+    <script src="integration-enhanced.js"></script>
+    <script>
+        // Global variables
+        let integration = null;
+        let rhythmAnalyzer = null;
+        let charts = {};
+
+        // Initialize dashboard
+        async function initDashboard() {
+            // Show loading state
+            showLoading();
+
+            // Initialize integration and analyzer
+            integration = new ProductivityIntegration();
+            rhythmAnalyzer = new RhythmAnalyzer();
+
+            // Set current date and greeting
+            updateDateTime();
+            
+            // Initialize charts
+            initCharts();
+
+            // Load data
+            await loadDashboardData();
+
+            // Set up auto-refresh
+            setInterval(loadDashboardData, 60000); // Refresh every minute
+            setInterval(updateDateTime, 1000); // Update time every second
+
+            // Hide loading state
+            hideLoading();
+        }
+
+        function updateDateTime() {
+            const now = new Date();
+            const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', dateOptions);
+
+            // Set greeting based on time
+            const hour = now.getHours();
+            let greeting = 'Good evening';
+            if (hour < 12) greeting = 'Good morning';
+            else if (hour < 18) greeting = 'Good afternoon';
+            
+            document.getElementById('greeting').textContent = greeting + '! Ready to track your productivity?';
+        }
+
+        async function loadDashboardData() {
+            try {
+                // Load today's scores
+                const today = new Date().toISOString().split('T')[0];
+                const scores = await getTodayScores();
+                
+                // Update component scores
+                updateComponentScores(scores);
+                
+                // Update composite score
+                updateCompositeScore(scores);
+                
+                // Load rhythm data
+                const rhythmData = await getRhythmData();
+                updateRhythmDisplay(rhythmData);
+                
+                // Load tasks
+                const tasks = await getTodayTasks();
+                updateTaskTimeline(tasks);
+                
+                // Update charts
+                await updateCharts();
+                
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        async function getTodayScores() {
+            // In production, this would fetch from IndexedDB
+            // For now, return sample data
+            return {
+                effort: 75 + Math.random() * 20,
+                duration: 80 + Math.random() * 15,
+                quality: 85 + Math.random() * 10,
+                goals: 70 + Math.random() * 25,
+                rhythm: 78 + Math.random() * 15
+            };
+        }
+
+        async function getRhythmData() {
+            // Sample rhythm data
+            return {
+                lastSleep: '23:15',
+                lastWake: '06:45',
+                duration: 7.5,
+                consistency: 85,
+                streak: 3
+            };
+        }
+
+        async function getTodayTasks() {
+            // Sample tasks
+            return [
+                { time: '09:00', title: 'Morning Standup', status: 'completed', priority: 'high', onTime: true },
+                { time: '10:30', title: 'Code Review', status: 'completed', priority: 'medium', onTime: false },
+                { time: '14:00', title: 'Team Meeting', status: 'pending', priority: 'high', onTime: null }
+            ];
+        }
+
+        function updateComponentScores(scores) {
+            document.getElementById('effortScore').textContent = Math.round(scores.effort);
+            document.getElementById('durationScore').textContent = Math.round(scores.duration);
+            document.getElementById('qualityScore').textContent = Math.round(scores.quality);
+            document.getElementById('goalsScore').textContent = Math.round(scores.goals);
+            document.getElementById('rhythmScore').textContent = Math.round(scores.rhythm);
+        }
+
+        function updateCompositeScore(scores) {
+            const weights = { effort: 0.20, duration: 0.20, quality: 0.25, goals: 0.20, rhythm: 0.15 };
+            
+            const composite = 
+                weights.effort * scores.effort +
+                weights.duration * scores.duration +
+                weights.quality * scores.quality +
+                weights.goals * scores.goals +
+                weights.rhythm * scores.rhythm;
+            
+            document.getElementById('compositeScore').textContent = Math.round(composite);
+            
+            // Update trend (sample)
+            const trend = Math.random() > 0.5 ? '↑' : '↓';
+            const change = (Math.random() * 10).toFixed(1);
+            document.getElementById('scoreTrend').textContent = `${trend} ${change}%`;
+        }
+
+        function updateRhythmDisplay(data) {
+            document.getElementById('lastSleep').textContent = data.lastSleep;
+            document.getElementById('lastWake').textContent = data.lastWake;
+            document.getElementById('sleepDuration').textContent = `${data.duration}h`;
+            
+            // Update insights
+            if (data.consistency > 80) {
+                document.getElementById('rhythmInsight1').className = 'insight-card positive';
+                document.getElementById('rhythmInsight1').innerHTML = 
+                    '<div class="insight-icon">✓</div><div class="insight-text">Excellent sleep consistency!</div>';
+            }
+            
+            document.getElementById('rhythmInsight2').innerHTML = 
+                `<div class="insight-icon">🔥</div><div class="insight-text">${data.streak}-day consistency streak</div>`;
+        }
+
+        function updateTaskTimeline(tasks) {
+            const timeline = document.getElementById('taskTimeline');
+            timeline.innerHTML = '';
+            
+            tasks.forEach(task => {
+                const item = document.createElement('div');
+                item.className = 'timeline-item';
+                
+                if (task.status === 'completed') {
+                    item.className += task.onTime ? ' completed' : ' late';
+                }
+                
+                item.innerHTML = `
+                    <div class="timeline-time">${task.time}</div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">${task.title}</div>
+                        <div class="timeline-meta">
+                            ${task.status === 'completed' ? 
+                                (task.onTime ? 'Completed on time' : 'Completed late') : 
+                                'Upcoming'} • 
+                            ${task.priority} priority
+                        </div>
+                    </div>
+                `;
+                
+                timeline.appendChild(item);
+            });
+        }
+
+        function initCharts() {
+            // Weekly Trend Chart
+            const weeklyChart = echarts.init(document.getElementById('weeklyTrendChart'));
+            charts.weekly = weeklyChart;
+            
+            // Rhythm Patterns Chart
+            const rhythmChart = echarts.init(document.getElementById('rhythmPatternsChart'));
+            charts.rhythm = rhythmChart;
+            
+            // Component Distribution Chart
+            const distChart = echarts.init(document.getElementById('componentDistChart'));
+            charts.distribution = distChart;
+        }
+
+        async function updateCharts() {
+            // Update Weekly Trend
+            updateWeeklyTrendChart();
+            
+            // Update Rhythm Patterns
+            updateRhythmPatternsChart();
+            
+            // Update Component Distribution
+            updateComponentDistChart();
+        }
+
+        function updateWeeklyTrendChart() {
+            const option = {
+                xAxis: {
+                    type: 'category',
+                    data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    axisLine: { show: false },
+                    axisTick: { show: false }
+                },
+                yAxis: {
+                    type: 'value',
+                    min: 0,
+                    max: 100,
+                    axisLine: { show: false },
+                    axisTick: { show: false },
+                    splitLine: { lineStyle: { type: 'dashed', opacity: 0.3 } }
+                },
+                series: [
+                    {
+                        name: 'Composite',
+                        data: [82, 85, 79, 88, 91, 75, 84],
+                        type: 'line',
+                        smooth: true,
+                        lineStyle: { width: 3, color: '#667eea' },
+                        areaStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: 'rgba(102, 126, 234, 0.3)' },
+                                { offset: 1, color: 'rgba(102, 126, 234, 0.0)' }
+                            ])
+                        }
+                    },
+                    {
+                        name: 'Rhythm',
+                        data: [78, 82, 75, 85, 88, 70, 80],
+                        type: 'line',
+                        smooth: true,
+                        lineStyle: { width: 2, color: '#DDA0DD', type: 'dashed' }
+                    }
+                ],
+                grid: {
+                    top: 20,
+                    right: 20,
+                    bottom: 20,
+                    left: 40
+                }
+            };
+            
+            charts.weekly.setOption(option);
+        }
+
+        function updateRhythmPatternsChart() {
+            const option = {
+                radar: {
+                    indicator: [
+                        { name: 'Sleep', max: 100 },
+                        { name: 'Wake', max: 100 },
+                        { name: 'Tasks', max: 100 },
+                        { name: 'Activity', max: 100 }
+                    ],
+                    shape: 'circle'
+                },
+                series: [{
+                    type: 'radar',
+                    data: [{
+                        value: [85, 78, 92, 73],
+                        name: 'Current',
+                        areaStyle: {
+                            color: 'rgba(221, 160, 221, 0.3)'
+                        },
+                        lineStyle: {
+                            color: '#DDA0DD'
+                        }
+                    }]
+                }],
+                grid: {
+                    top: 10,
+                    right: 10,
+                    bottom: 10,
+                    left: 10
+                }
+            };
+            
+            charts.rhythm.setOption(option);
+        }
+
+        function updateComponentDistChart() {
+            const option = {
+                series: [{
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    data: [
+                        { value: 20, name: 'Effort', itemStyle: { color: '#FF6B6B' } },
+                        { value: 20, name: 'Duration', itemStyle: { color: '#4ECDC4' } },
+                        { value: 25, name: 'Quality', itemStyle: { color: '#45B7D1' } },
+                        { value: 20, name: 'Goals', itemStyle: { color: '#96CEB4' } },
+                        { value: 15, name: 'Rhythm', itemStyle: { color: '#DDA0DD' } }
+                    ],
+                    label: {
+                        show: false
+                    },
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    }
+                }],
+                grid: {
+                    top: 0,
+                    right: 0,
+                    bottom: 0,
+                    left: 0
+                }
+            };
+            
+            charts.distribution.setOption(option);
+        }
+
+        // Action handlers
+        function showComponentDetails(component) {
+            console.log('Show details for:', component);
+            // Implementation for showing component details
+        }
+
+        function trackSleep() {
+            window.location.href = 'rhythm-tracker.html';
+        }
+
+        function addTask() {
+            window.location.href = 'task-planner-enhanced.html';
+        }
+
+        function logActivity() {
+            console.log('Log activity');
+            // Implementation for activity logging
+        }
+
+        function viewAnalytics() {
+            window.location.href = 'productivity-parallel-coords-enhanced.html';
+        }
+
+        function setGoal() {
+            console.log('Set goal');
+            // Implementation for goal setting
+        }
+
+        function viewInsights() {
+            console.log('View insights');
+            // Implementation for viewing insights
+        }
+
+        function openQuickCapture() {
+            console.log('Open quick capture');
+            // Implementation for quick capture modal
+        }
+
+        function showLoading() {
+            // Implementation for loading state
+        }
+
+        function hideLoading() {
+            // Implementation for hiding loading state
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            Object.values(charts).forEach(chart => {
+                if (chart) chart.resize();
+            });
+        });
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>
