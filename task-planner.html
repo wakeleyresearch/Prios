@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Productivity Planner - Task & Goal Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/lucide-static@0.263.0/font/lucide.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a67d8;
+            --secondary: #764ba2;
+            --success: #48bb78;
+            --warning: #f6ad55;
+            --danger: #f56565;
+            --dark: #2d3748;
+            --gray: #718096;
+            --light: #f7fafc;
+            --white: #ffffff;
+            
+            --high-priority: #ff6b6b;
+            --medium-priority: #ffd93d;
+            --low-priority: #6bcf7f;
+            
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+            --shadow-xl: 0 20px 25px rgba(0,0,0,0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--dark);
+        }
+
+        /* Navigation Header */
+        .nav-header {
+            background: rgba(255,255,255,0.98);
+            box-shadow: var(--shadow-md);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: var(--gray);
+            font-weight: 500;
+            transition: color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--primary);
+        }
+
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--success);
+            color: white;
+            border-radius: 2rem;
+            font-size: 0.875rem;
+        }
+
+        /* Main Container */
+        .main-container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: 300px 1fr 350px;
+            gap: 2rem;
+            min-height: calc(100vh - 120px);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
+            height: fit-content;
+        }
+
+        .sidebar h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1.5rem;
+            color: var(--dark);
+        }
+
+        .goal-list {
+            list-style: none;
+        }
+
+        .goal-item {
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border-left: 3px solid var(--primary);
+            background: var(--light);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .goal-item:hover {
+            background: linear-gradient(90deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
+            transform: translateX(5px);
+        }
+
+        .goal-item .goal-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .goal-item .goal-progress {
+            font-size: 0.875rem;
+            color: var(--gray);
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: #e2e8f0;
+            border-radius: 2px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+
+        .add-goal-btn {
+            width: 100%;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: transform 0.3s;
+        }
+
+        .add-goal-btn:hover {
+            transform: scale(1.02);
+        }
+
+        /* Calendar View */
+        .calendar-section {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .calendar-nav {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .calendar-nav button {
+            padding: 0.5rem;
+            background: var(--light);
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .calendar-nav button:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 0.5rem;
+            background: var(--light);
+            padding: 0.25rem;
+            border-radius: 0.5rem;
+        }
+
+        .view-btn {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .view-btn.active {
+            background: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Week View */
+        .week-view {
+            display: grid;
+            grid-template-columns: 80px repeat(7, 1fr);
+            gap: 1px;
+            background: #e2e8f0;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+
+        .day-header {
+            background: var(--light);
+            padding: 1rem;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .day-header.today {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+        }
+
+        .time-slot {
+            background: white;
+            padding: 0.5rem;
+            min-height: 60px;
+            font-size: 0.875rem;
+            color: var(--gray);
+            border-right: 1px solid var(--light);
+        }
+
+        .day-column {
+            background: white;
+            min-height: 60px;
+            padding: 0.5rem;
+            position: relative;
+        }
+
+        .task-block {
+            background: linear-gradient(135deg, rgba(102,126,234,0.2) 0%, rgba(118,75,162,0.2) 100%);
+            border-left: 3px solid var(--primary);
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .task-block:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .task-block.high-priority {
+            border-left-color: var(--high-priority);
+            background: rgba(255,107,107,0.1);
+        }
+
+        .task-block.medium-priority {
+            border-left-color: var(--medium-priority);
+            background: rgba(255,217,61,0.1);
+        }
+
+        .task-block.low-priority {
+            border-left-color: var(--low-priority);
+            background: rgba(107,207,127,0.1);
+        }
+
+        .task-block .task-time {
+            font-size: 0.75rem;
+            color: var(--gray);
+            margin-bottom: 0.25rem;
+        }
+
+        .task-block .task-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .task-block .task-category {
+            display: inline-block;
+            padding: 0.125rem 0.5rem;
+            background: rgba(102,126,234,0.2);
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
+
+        /* Task Panel */
+        .task-panel {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
+            height: fit-content;
+        }
+
+        .task-panel h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1.5rem;
+            color: var(--dark);
+        }
+
+        .quick-add {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .quick-add input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 2px solid var(--light);
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .quick-add input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .quick-add button {
+            padding: 0.75rem 1.5rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .quick-add button:hover {
+            background: var(--primary-dark);
+        }
+
+        .task-categories {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .category-chip {
+            padding: 0.5rem 1rem;
+            background: var(--light);
+            border: 2px solid transparent;
+            border-radius: 2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .category-chip:hover {
+            border-color: var(--primary);
+        }
+
+        .category-chip.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+        }
+
+        .recurring-templates {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 2px solid var(--light);
+        }
+
+        .template-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem;
+            background: var(--light);
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .template-item:hover {
+            background: linear-gradient(90deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
+        }
+
+        .template-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .template-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border-radius: 0.5rem;
+            font-size: 1.25rem;
+        }
+
+        .template-details .template-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .template-details .template-schedule {
+            font-size: 0.875rem;
+            color: var(--gray);
+        }
+
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+            color: var(--dark);
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--gray);
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close-modal:hover {
+            color: var(--danger);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid var(--light);
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .priority-selector {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .priority-option {
+            flex: 1;
+            padding: 0.75rem;
+            border: 2px solid var(--light);
+            border-radius: 0.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .priority-option:hover {
+            transform: translateY(-2px);
+        }
+
+        .priority-option.high {
+            border-color: var(--high-priority);
+            color: var(--high-priority);
+        }
+
+        .priority-option.medium {
+            border-color: var(--medium-priority);
+            color: var(--medium-priority);
+        }
+
+        .priority-option.low {
+            border-color: var(--low-priority);
+            color: var(--low-priority);
+        }
+
+        .priority-option.selected {
+            color: white;
+        }
+
+        .priority-option.high.selected {
+            background: var(--high-priority);
+        }
+
+        .priority-option.medium.selected {
+            background: var(--medium-priority);
+        }
+
+        .priority-option.low.selected {
+            background: var(--low-priority);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--light);
+            color: var(--gray);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Floating Action Button */
+        .fab {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: var(--shadow-lg);
+            transition: all 0.3s;
+            z-index: 999;
+        }
+
+        .fab:hover {
+            transform: scale(1.1);
+            box-shadow: var(--shadow-xl);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .main-container {
+                grid-template-columns: 250px 1fr;
+            }
+            
+            .task-panel {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+            
+            .sidebar {
+                display: none;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav-header">
+        <div class="nav-container">
+            <div class="logo">
+                <i class="lucide-calendar-check"></i>
+                <span>ProductivityFlow</span>
+            </div>
+            <div class="nav-links">
+                <a href="#" class="nav-link active">
+                    <i class="lucide-calendar"></i>
+                    Planner
+                </a>
+                <a href="productivity-parallel-coords.html" class="nav-link">
+                    <i class="lucide-bar-chart-3"></i>
+                    Analytics
+                </a>
+                <a href="#" class="nav-link" onclick="openSettings()">
+                    <i class="lucide-settings"></i>
+                    Settings
+                </a>
+            </div>
+            <div class="sync-status">
+                <i class="lucide-cloud-check"></i>
+                <span>Synced</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-container">
+        <!-- Left Sidebar - Goals -->
+        <aside class="sidebar">
+            <h2>Goals & Projects</h2>
+            <ul class="goal-list" id="goalList">
+                <li class="goal-item">
+                    <div class="goal-name">Q4 Product Launch</div>
+                    <div class="goal-progress">12/20 tasks completed</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 60%"></div>
+                    </div>
+                </li>
+                <li class="goal-item">
+                    <div class="goal-name">Fitness Goal</div>
+                    <div class="goal-progress">18/30 workouts</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 60%"></div>
+                    </div>
+                </li>
+                <li class="goal-item">
+                    <div class="goal-name">Learn Spanish</div>
+                    <div class="goal-progress">45/100 lessons</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 45%"></div>
+                    </div>
+                </li>
+            </ul>
+            <button class="add-goal-btn" onclick="openGoalModal()">
+                <i class="lucide-plus"></i> Add New Goal
+            </button>
+        </aside>
+
+        <!-- Center - Calendar View -->
+        <main class="calendar-section">
+            <div class="calendar-header">
+                <div class="calendar-nav">
+                    <button onclick="navigateWeek(-1)">
+                        <i class="lucide-chevron-left"></i>
+                    </button>
+                    <h2 id="weekDisplay">Week of Nov 18-24, 2024</h2>
+                    <button onclick="navigateWeek(1)">
+                        <i class="lucide-chevron-right"></i>
+                    </button>
+                    <button onclick="goToToday()">Today</button>
+                </div>
+                <div class="view-toggle">
+                    <button class="view-btn" onclick="changeView('day')">Day</button>
+                    <button class="view-btn active" onclick="changeView('week')">Week</button>
+                    <button class="view-btn" onclick="changeView('month')">Month</button>
+                </div>
+            </div>
+
+            <div class="week-view" id="calendarView">
+                <!-- Time labels -->
+                <div class="time-slot"></div>
+                <div class="day-header">Sun<br>18</div>
+                <div class="day-header">Mon<br>19</div>
+                <div class="day-header">Tue<br>20</div>
+                <div class="day-header today">Wed<br>21</div>
+                <div class="day-header">Thu<br>22</div>
+                <div class="day-header">Fri<br>23</div>
+                <div class="day-header">Sat<br>24</div>
+
+                <!-- 8 AM -->
+                <div class="time-slot">8:00 AM</div>
+                <div class="day-column">
+                    <div class="task-block low-priority">
+                        <div class="task-time">8:00 - 9:00 AM</div>
+                        <div class="task-title">Morning Meditation</div>
+                        <span class="task-category">Wellness</span>
+                    </div>
+                </div>
+                <div class="day-column">
+                    <div class="task-block high-priority">
+                        <div class="task-time">8:30 - 9:30 AM</div>
+                        <div class="task-title">Team Standup</div>
+                        <span class="task-category">Work</span>
+                    </div>
+                </div>
+                <div class="day-column">
+                    <div class="task-block high-priority">
+                        <div class="task-time">8:30 - 9:30 AM</div>
+                        <div class="task-title">Team Standup</div>
+                        <span class="task-category">Work</span>
+                    </div>
+                </div>
+                <div class="day-column">
+                    <div class="task-block high-priority">
+                        <div class="task-time">8:30 - 9:30 AM</div>
+                        <div class="task-title">Team Standup</div>
+                        <span class="task-category">Work</span>
+                    </div>
+                </div>
+                <div class="day-column">
+                    <div class="task-block high-priority">
+                        <div class="task-time">8:30 - 9:30 AM</div>
+                        <div class="task-title">Team Standup</div>
+                        <span class="task-category">Work</span>
+                    </div>
+                </div>
+                <div class="day-column">
+                    <div class="task-block high-priority">
+                        <div class="task-time">8:30 - 9:30 AM</div>
+                        <div class="task-title">Team Standup</div>
+                        <span class="task-category">Work</span>
+                    </div>
+                </div>
+                <div class="day-column">
+                    <div class="task-block medium-priority">
+                        <div class="task-time">8:00 - 10:00 AM</div>
+                        <div class="task-title">Gym Session</div>
+                        <span class="task-category">Fitness</span>
+                    </div>
+                </div>
+
+                <!-- More time slots would go here -->
+                <!-- Simplified for brevity -->
+            </div>
+        </main>
+
+        <!-- Right Panel - Quick Actions -->
+        <aside class="task-panel">
+            <h2>Quick Add Task</h2>
+            <div class="quick-add">
+                <input type="text" id="quickTaskInput" placeholder="What needs to be done?">
+                <button onclick="quickAddTask()">
+                    <i class="lucide-plus"></i>
+                </button>
+            </div>
+
+            <div class="task-categories">
+                <div class="category-chip active" data-category="all">All</div>
+                <div class="category-chip" data-category="work">Work</div>
+                <div class="category-chip" data-category="personal">Personal</div>
+                <div class="category-chip" data-category="fitness">Fitness</div>
+                <div class="category-chip" data-category="learning">Learning</div>
+            </div>
+
+            <div class="recurring-templates">
+                <h3>Recurring Activities</h3>
+                <div class="template-item" onclick="addRecurringTask('standup')">
+                    <div class="template-info">
+                        <div class="template-icon">👥</div>
+                        <div class="template-details">
+                            <div class="template-name">Daily Standup</div>
+                            <div class="template-schedule">Mon-Fri, 8:30 AM</div>
+                        </div>
+                    </div>
+                    <i class="lucide-plus-circle"></i>
+                </div>
+                <div class="template-item" onclick="addRecurringTask('gym')">
+                    <div class="template-info">
+                        <div class="template-icon">💪</div>
+                        <div class="template-details">
+                            <div class="template-name">Gym Workout</div>
+                            <div class="template-schedule">Mon/Wed/Fri, 6:00 PM</div>
+                        </div>
+                    </div>
+                    <i class="lucide-plus-circle"></i>
+                </div>
+                <div class="template-item" onclick="addRecurringTask('spanish')">
+                    <div class="template-info">
+                        <div class="template-icon">📚</div>
+                        <div class="template-details">
+                            <div class="template-name">Spanish Practice</div>
+                            <div class="template-schedule">Daily, 7:00 PM</div>
+                        </div>
+                    </div>
+                    <i class="lucide-plus-circle"></i>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Task Modal -->
+    <div class="modal" id="taskModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Task</h2>
+                <button class="close-modal" onclick="closeModal('taskModal')">×</button>
+            </div>
+            <form id="taskForm">
+                <div class="form-group">
+                    <label for="taskTitle">Task Title</label>
+                    <input type="text" id="taskTitle" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="taskDescription">Description</label>
+                    <textarea id="taskDescription"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Priority</label>
+                    <div class="priority-selector">
+                        <div class="priority-option high" data-priority="high">
+                            <i class="lucide-alert-circle"></i> High
+                        </div>
+                        <div class="priority-option medium selected" data-priority="medium">
+                            <i class="lucide-alert-triangle"></i> Medium
+                        </div>
+                        <div class="priority-option low" data-priority="low">
+                            <i class="lucide-info"></i> Low
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="taskDate">Date</label>
+                    <input type="date" id="taskDate" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="taskTime">Time</label>
+                    <input type="time" id="taskTime">
+                </div>
+                
+                <div class="form-group">
+                    <label for="taskDuration">Duration (minutes)</label>
+                    <input type="number" id="taskDuration" min="15" step="15" value="60">
+                </div>
+                
+                <div class="form-group">
+                    <label for="taskCategory">Category</label>
+                    <select id="taskCategory">
+                        <option value="work">Work</option>
+                        <option value="personal">Personal</option>
+                        <option value="fitness">Fitness</option>
+                        <option value="learning">Learning</option>
+                        <option value="wellness">Wellness</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="taskGoal">Link to Goal</label>
+                    <select id="taskGoal">
+                        <option value="">No specific goal</option>
+                        <option value="q4-launch">Q4 Product Launch</option>
+                        <option value="fitness">Fitness Goal</option>
+                        <option value="spanish">Learn Spanish</option>
+                    </select>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('taskModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Goal Modal -->
+    <div class="modal" id="goalModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create New Goal</h2>
+                <button class="close-modal" onclick="closeModal('goalModal')">×</button>
+            </div>
+            <form id="goalForm">
+                <div class="form-group">
+                    <label for="goalName">Goal Name</label>
+                    <input type="text" id="goalName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="goalDescription">Description</label>
+                    <textarea id="goalDescription"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="goalDeadline">Target Deadline</label>
+                    <input type="date" id="goalDeadline">
+                </div>
+                
+                <div class="form-group">
+                    <label for="goalCategory">Category</label>
+                    <select id="goalCategory">
+                        <option value="career">Career</option>
+                        <option value="health">Health & Fitness</option>
+                        <option value="learning">Learning & Development</option>
+                        <option value="financial">Financial</option>
+                        <option value="personal">Personal</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="goalMetric">Success Metric</label>
+                    <input type="text" id="goalMetric" placeholder="e.g., Complete 30 workouts">
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('goalModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Goal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <button class="fab" onclick="openTaskModal()">
+        <i class="lucide-plus"></i>
+    </button>
+
+    <script src="task-manager.js"></script>
+</body>
+</html>

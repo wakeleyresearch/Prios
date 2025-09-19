@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prios • Reflection</title>
+  <link rel="stylesheet" href="theme.css" />
+  <style>
+    .container { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+    .tabs { display:flex; gap:.5rem; margin-bottom: 1rem; }
+    .tab { padding:.5rem .75rem; border:1px solid var(--border-color); border-radius:.5rem; background: var(--bg-secondary); cursor:pointer; }
+    .tab.active { border-color: var(--accent-primary); }
+    .section { padding: 1rem; border: 1px solid var(--border-color); border-radius: .75rem; background: var(--bg-secondary); }
+    .row { display:grid; gap:.75rem; }
+    .helper { color: var(--text-secondary); font-size:.9rem; margin-bottom:.5rem; }
+    .actions { display:flex; gap:.5rem; justify-content:flex-end; }
+    .mt-3 { margin-top: .75rem; }
+    .cols-2 { grid-template-columns: repeat(2, 1fr); }
+    .cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .autocomplete { position: relative; }
+    .suggestions { position:absolute; top: 100%; left:0; right:0; background: var(--bg-secondary); border:1px solid var(--border-color); border-radius:.5rem; max-height:180px; overflow:auto; z-index:10; }
+    .suggestion { padding:.5rem; border-bottom:1px solid var(--border-color); cursor:pointer; }
+    .suggestion:last-child { border-bottom:none; }
+    /* Preview UI styles for JournalNLPParser */
+    .preview-container { margin-top: .75rem; }
+    .preview-header { font-weight: 600; margin-bottom: .5rem; color: var(--text-primary); }
+    .task-preview { border:1px solid var(--border-color); border-radius:.5rem; padding:.5rem .75rem; background: var(--bg-tertiary); margin-bottom: .5rem; }
+    .task-preview.high-confidence { box-shadow: 0 0 0 1px rgba(16,185,129,0.25) inset; }
+    .task-preview.medium-confidence { box-shadow: 0 0 0 1px rgba(245,158,11,0.25) inset; }
+    .task-preview.low-confidence { box-shadow: 0 0 0 1px rgba(239,68,68,0.25) inset; }
+    .task-header { display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
+    .task-title { font-weight:600; }
+    .task-meta { color: var(--text-secondary); font-size:.85rem; display:flex; gap:.5rem; align-items:center; }
+    .category-badge { padding:2px 6px; border-radius:.5rem; border:1px solid var(--border-color); font-size:.75rem; text-transform: capitalize; }
+    .confidence-bar { position:relative; height:6px; background: var(--bg-hover); border-radius:.5rem; margin-top:.5rem; }
+    .confidence-fill { position:absolute; top:0; left:0; bottom:0; background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary)); border-radius:.5rem; }
+    .confidence-label { display:block; margin-top:.25rem; font-size:.75rem; color: var(--text-secondary); }
+    .no-tasks { color: var(--text-secondary); }
+  </style>
+</head>
+<body>
+  <div class="header-nav">
+    <div class="brand">Prios</div>
+    <div class="links">
+      <a href="index.html">Home</a>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="todo-list.html">To-Do</a>
+      <a href="task-planner-enhanced.html">Planner</a>
+      <a href="productivity-parallel-coords.html">Analytics</a>
+      <a href="reflection.html" class="active">Reflection</a>
+      <a href="settings.html">Settings</a>
+    </div>
+  </div>
+
+  <main class="container">
+    <h1>Reflection</h1>
+    <div class="tabs">
+      <button class="tab active" id="journalTab">Journal</button>
+      <button class="tab" id="tasksTab">Task List</button>
+    </div>
+
+    <section class="section" id="journalView">
+      <p class="helper">Describe your day in natural language. Include what you did, approximate durations (e.g., "1h 30m"), and optionally how you felt.</p>
+      <textarea id="journalInput" rows="8" class="w-full" placeholder="e.g., Worked on the Q4 launch plan for 1h 20m, had a 30m team sync, gym for 45m. Felt productive and focused."></textarea>
+      <div class="actions mt-3">
+        <button class="btn btn-secondary" id="previewBtn">Preview Parse</button>
+        <button class="btn" id="saveJournalBtn">Save to Tasks</button>
+      </div>
+      <div id="journalPreview" class="helper mt-3"></div>
+    </section>
+
+    <section class="section hidden" id="taskListView">
+      <div class="row">
+        <div class="autocomplete">
+          <label class="helper">Task Title (autocomplete from history)</label>
+          <input id="taskTitle" class="input" placeholder="Start typing..." />
+          <div id="titleSuggestions" class="suggestions hidden"></div>
+        </div>
+        <div class="row cols-2">
+          <div>
+            <label class="helper" for="taskDate">Date</label>
+            <input id="taskDate" type="date" class="input" title="Date" />
+          </div>
+          <div>
+            <label class="helper" for="taskTime">Time (optional)</label>
+            <input id="taskTime" type="time" class="input" title="Time (optional)" />
+          </div>
+        </div>
+        <div class="row cols-3">
+          <div>
+            <label class="helper" for="taskDuration">Duration (min)</label>
+            <input id="taskDuration" type="number" class="input" min="5" step="5" value="60" title="Duration in minutes" />
+          </div>
+          <div>
+            <label class="helper" for="taskCategory">Category</label>
+            <select id="taskCategory" class="input" title="Category">
+              <option value="work">Work</option>
+              <option value="learning">Learning</option>
+              <option value="fitness">Fitness</option>
+              <option value="personal">Personal</option>
+              <option value="wellness">Wellness</option>
+            </select>
+          </div>
+          <div>
+            <label class="helper" for="taskPriority">Priority</label>
+            <select id="taskPriority" class="input" title="Priority">
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="helper">Notes/Feelings</label>
+          <textarea id="taskNotes" rows="3" class="input w-full" placeholder="Optional context"></textarea>
+        </div>
+        <div class="actions">
+          <button class="btn btn-secondary" id="addTaskBtn">Add Task</button>
+          <button class="btn" id="saveTasksBtn">Save All</button>
+        </div>
+        <div id="taskList" class="helper"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Settings toggle and tabs
+    const journalTab = document.getElementById('journalTab');
+    const tasksTab = document.getElementById('tasksTab');
+    const journalView = document.getElementById('journalView');
+    const taskListView = document.getElementById('taskListView');
+    journalTab.addEventListener('click', ()=>{
+      journalTab.classList.add('active'); tasksTab.classList.remove('active'); journalView.style.display='block'; taskListView.style.display='none';
+    });
+    tasksTab.addEventListener('click', ()=>{
+      tasksTab.classList.add('active'); journalTab.classList.remove('active'); taskListView.style.display='block'; journalView.style.display='none';
+    });
+
+    // Remove basic lightweight parser; we'll load the enhanced parser when enabled
+
+    // Autocomplete suggestions sourced from existing tasks
+    async function getTaskSuggestions(prefix){
+      return new Promise((resolve)=>{
+        const request = indexedDB.open('ProductivityDB', 1);
+        request.onsuccess = (e)=>{
+          const db = e.target.result;
+          const tx = db.transaction(['tasks'],'readonly');
+          const store = tx.objectStore('tasks');
+          const req = store.getAll();
+          req.onsuccess = ()=>{
+            const titles = Array.from(new Set(req.result.map(t=>t.title))).filter(t=> t.toLowerCase().startsWith(prefix.toLowerCase())).slice(0,10);
+            resolve(titles);
+          };
+        };
+        request.onerror = ()=> resolve([]);
+      });
+    }
+
+    function showSuggestions(list){
+      const box = document.getElementById('titleSuggestions');
+      box.innerHTML = '';
+      if(!list.length){ box.classList.add('hidden'); return; }
+      list.forEach(t=>{
+        const div = document.createElement('div');
+        div.className = 'suggestion';
+        div.textContent = t;
+        div.onclick = ()=>{ document.getElementById('taskTitle').value = t; box.classList.add('hidden'); };
+        box.appendChild(div);
+      });
+      box.classList.remove('hidden');
+    }
+
+    document.getElementById('taskTitle').addEventListener('input', async (e)=>{
+      const v = e.target.value.trim();
+      if(!v){ showSuggestions([]); return; }
+      showSuggestions(await getTaskSuggestions(v));
+    });
+
+    // Enhanced parser will attach preview/save listeners itself when loaded
+
+    // Task list builder
+    const taskBuffer = [];
+    document.getElementById('addTaskBtn').addEventListener('click', ()=>{
+      const t = document.getElementById('taskTitle').value.trim();
+      if(!t){ alert('Title required'); return; }
+      const task = {
+        title: t,
+        date: document.getElementById('taskDate').value || new Date().toISOString().split('T')[0],
+        time: document.getElementById('taskTime').value || '',
+        duration: parseInt(document.getElementById('taskDuration').value || '60'),
+        category: document.getElementById('taskCategory').value,
+        priority: document.getElementById('taskPriority').value,
+        description: document.getElementById('taskNotes').value || '',
+        goalId: null,
+        completed: true
+      };
+      taskBuffer.push(task);
+      document.getElementById('taskList').innerHTML = `${taskBuffer.length} task(s) queued.`;
+      document.getElementById('taskTitle').value = '';
+      document.getElementById('taskNotes').value = '';
+    });
+
+    document.getElementById('saveTasksBtn').addEventListener('click', async ()=>{
+      if(!taskBuffer.length){ alert('No tasks to save.'); return; }
+      if (window.TaskAPI?.ensureDBReady) { await window.TaskAPI.ensureDBReady(); }
+      for(const task of taskBuffer){ await window.TaskAPI.saveTask(task); }
+      taskBuffer.length = 0;
+      document.getElementById('taskList').innerHTML = 'Saved. Analytics will update shortly.';
+    });
+
+    // Respect NLP setting: if disabled, default to Task List and hide Journal tab
+    document.addEventListener('DOMContentLoaded', () => {
+      try {
+        const s = JSON.parse(localStorage.getItem('appSettings') || '{}');
+        const nlpOn = (s.nlpEnabled || 'on') === 'on';
+        if (!nlpOn) {
+          // Switch to Task List
+          tasksTab.classList.add('active');
+          journalTab.classList.remove('active');
+          taskListView.classList.remove('hidden');
+          journalView.style.display = 'none';
+          // Muted note about NLP off
+          const note = document.createElement('div');
+          note.className = 'helper';
+          note.textContent = 'Journal parsing is disabled in Settings. You can still add tasks below.';
+          taskListView.prepend(note);
+        } else {
+          // Dynamically load enhanced parser when NLP is enabled
+          const script = document.createElement('script');
+          script.src = 'JournalNLPParser.js';
+          script.defer = true;
+          document.body.appendChild(script);
+        }
+      } catch {}
+    });
+  </script>
+  <script src="task-manager.js"></script>
+</body>
+</html>

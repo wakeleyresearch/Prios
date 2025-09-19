@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prios • Personal Optimization Suite</title>
+    <link rel="stylesheet" href="theme.css" />
+    <style>
+        .container { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+        .hero { text-align: center; margin: 2rem 0 1.5rem; }
+        .hero h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+        .hero p { color: var(--text-secondary); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
+        .card-link { text-decoration: none; color: inherit; }
+        .app-card { padding: 1rem; border: 1px solid var(--border-color); border-radius: 0.75rem; background: var(--bg-secondary); transition: transform .18s ease, box-shadow .18s ease; }
+        .app-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+        .app-card h3 { margin: .5rem 0; }
+        .app-card p { color: var(--text-secondary); font-size: .95rem; }
+        .pill { display:inline-block; padding:.15rem .5rem; border:1px solid var(--border-color); border-radius:.5rem; font-size:.75rem; color: var(--text-secondary); }
+        footer { margin: 2rem 0; text-align: center; color: var(--text-secondary); }
+    </style>
+</head>
+<body>
+    <div class="header-nav">
+        <div class="brand">Prios</div>
+        <div class="links">
+            <a href="index.html" class="active">Home</a>
+            <a href="dashboard.html">Dashboard</a>
+            <a href="todo-list.html">To-Do</a>
+            <a href="task-planner-enhanced.html">Planner</a>
+            <a href="productivity-parallel-coords.html">Analytics</a>
+        </div>
+    </div>
+
+    <main class="container">
+        <section class="hero">
+            <h1>Personal Optimization Suite</h1>
+            <p>Plan your time, track productivity, and explore insights—all in one place.</p>
+        </section>
+
+        <section class="grid">
+            <a class="card-link" href="dashboard.html">
+                <div class="app-card">
+                    <span class="pill">Start here</span>
+                    <h3>Dashboard</h3>
+                    <p>Overview of tasks, goals, and a quick path to focus or plan your week.</p>
+                </div>
+            </a>
+
+            <a class="card-link" href="task-planner-enhanced.html">
+                <div class="app-card">
+                    <span class="pill">Planner</span>
+                    <h3>Weekly Planner</h3>
+                    <p>Schedule tasks by hour in day/week views with live edit & delete.</p>
+                </div>
+            </a>
+
+            <a class="card-link" href="todo-list.html">
+                <div class="app-card">
+                    <span class="pill">List</span>
+                    <h3>To‑Do</h3>
+                    <p>Quick capture and daily execution with progress.</p>
+                </div>
+            </a>
+
+            <a class="card-link" href="productivity-parallel-coords.html">
+                <div class="app-card">
+                    <span class="pill">Insights</span>
+                    <h3>Analytics</h3>
+                    <p>Parallel coordinates with optimizer modes, anomalies, and Cronbach’s α.</p>
+                </div>
+            </a>
+
+            <a class="card-link" href="data-generator.html">
+                <div class="app-card">
+                    <span class="pill">Tools</span>
+                    <h3>Data Generator</h3>
+                    <p>Synthesize realistic tasks, goals, and scores by persona.</p>
+                </div>
+            </a>
+
+            <a class="card-link" href="Project/index.html">
+                <div class="app-card">
+                    <span class="pill">Extras</span>
+                    <h3>Radar & Priorities</h3>
+                    <p>Radar charts and priorities budgeting tools.</p>
+                </div>
+            </a>
+        </section>
+
+        <footer>
+            Prios • Built for rapid iteration. See the <a href="README.md">README</a> for tips.
+        </footer>
+    </main>
+</body>
+</html>

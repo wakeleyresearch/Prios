@@ -21,7 +21,7 @@ function RadarChart(el, options) {
   }
 
   // Axes
-  const axis = g.selectAll(".axis").data(axes).enter().append("g");
+  const axis = g.selectAll(".axis").data(axes).enter().append("g").attr("class","axis");
   axis.append("line")
     .attr("x1",0).attr("y1",0)
     .attr("x2",(d,i)=>r(maxValue)*Math.cos(angleSlice*i - Math.PI/2))

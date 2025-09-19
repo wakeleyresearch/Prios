@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProductivityFlow - Data Generator</title>
+    <link rel="stylesheet" href="theme.css" />
+    <style>
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a67d8;
+            --secondary: #764ba2;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1f2937;
+            --gray: #6b7280;
+            --light: #f9fafb;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 2rem;
+        }
+
+        h1 {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        .subtitle {
+            color: var(--gray);
+            margin-bottom: 2rem;
+        }
+
+        .section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: var(--light);
+            border-radius: 0.5rem;
+        }
+
+        .section h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: var(--dark);
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .config-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-weight: 500;
+            color: var(--dark);
+            font-size: 0.875rem;
+        }
+
+        input, select {
+            padding: 0.5rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.375rem;
+            font-size: 1rem;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        button {
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .progress {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: var(--light);
+            border-radius: 0.5rem;
+            display: none;
+        }
+
+        .progress.active {
+            display: block;
+        }
+
+        .progress-bar {
+            height: 20px;
+            background: #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+            transition: width 0.3s ease;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stat {
+            text-align: center;
+            padding: 1rem;
+            background: white;
+            border-radius: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--gray);
+            margin-top: 0.25rem;
+        }
+
+        .log {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--dark);
+            color: #10b981;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            border-radius: 0.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .preview-card {
+            padding: 1rem;
+            background: white;
+            border-radius: 0.5rem;
+            border-left: 4px solid var(--primary);
+        }
+
+        .preview-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .preview-meta {
+            font-size: 0.875rem;
+            color: var(--gray);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 ProductivityFlow Data Generator</h1>
+        <p class="subtitle">Generate realistic productivity data for testing and demonstration</p>
+
+        <div class="section">
+            <h2>📅 Configuration</h2>
+            <div class="config-grid">
+                <div class="config-item">
+                    <label for="months">Number of Months</label>
+                    <input type="number" id="months" value="3" min="1" max="12">
+                </div>
+                <div class="config-item">
+                    <label for="startDate">Start Date</label>
+                    <input type="date" id="startDate" value="2024-09-01">
+                </div>
+                <div class="config-item">
+                    <label for="tasksPerDay">Tasks per Day (avg)</label>
+                    <input type="number" id="tasksPerDay" value="8" min="1" max="20">
+                </div>
+                <div class="config-item">
+                    <label for="completionRate">Completion Rate (%)</label>
+                    <input type="number" id="completionRate" value="75" min="0" max="100">
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🎯 Goals & Projects</h2>
+            <div class="config-grid">
+                <div class="config-item">
+                    <label for="numGoals">Number of Goals</label>
+                    <input type="number" id="numGoals" value="6" min="1" max="20">
+                </div>
+                <div class="config-item">
+                    <label for="persona">Persona Type</label>
+                    <select id="persona">
+                        <option value="professional">Professional/Office Worker</option>
+                        <option value="student">Student</option>
+                        <option value="entrepreneur">Entrepreneur</option>
+                        <option value="creative">Creative/Artist</option>
+                        <option value="balanced">Balanced Lifestyle</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-primary" onclick="generateData()">
+                🎨 Generate Data
+            </button>
+            <button class="btn-secondary" onclick="previewData()">
+                👁️ Preview Sample
+            </button>
+            <button class="btn-secondary" onclick="clearData()">
+                🗑️ Clear Existing
+            </button>
+        </div>
+
+        <div class="progress" id="progress">
+            <h3>Generating Data...</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="log" id="log"></div>
+        </div>
+
+    <div class="section hidden" id="results">
+            <h2>✅ Generation Complete</h2>
+            <div class="stats" id="stats"></div>
+            <div class="preview-grid" id="preview"></div>
+        </div>
+    </div>
+
+    <script>
+// Comprehensive Synthetic Data Generator
+
+class ProductivityDataGenerator {
+    constructor(config) {
+        this.config = config;
+        this.db = null;
+        this.goals = [];
+        this.tasks = [];
+        this.templates = [];
+        this.scores = [];
+        
+        // Persona configurations
+        this.personas = {
+            professional: {
+                categories: ['work', 'learning', 'fitness', 'personal'],
+                weights: [0.5, 0.2, 0.15, 0.15],
+                workHours: [8, 18],
+                peakHours: [9, 11, 14, 16],
+                goals: [
+                    'Q4 Product Launch',
+                    'Professional Certification',
+                    'Team Leadership Development',
+                    'Client Satisfaction Improvement',
+                    'Process Automation',
+                    'Annual Performance Review'
+                ]
+            },
+            student: {
+                categories: ['learning', 'personal', 'fitness', 'work'],
+                weights: [0.4, 0.3, 0.2, 0.1],
+                workHours: [10, 22],
+                peakHours: [10, 14, 19, 21],
+                goals: [
+                    'Semester GPA 3.8+',
+                    'Research Paper Publication',
+                    'Internship Applications',
+                    'Study Group Organization',
+                    'Skill Development',
+                    'Campus Activities'
+                ]
+            },
+            entrepreneur: {
+                categories: ['work', 'learning', 'personal', 'wellness'],
+                weights: [0.6, 0.2, 0.1, 0.1],
+                workHours: [7, 23],
+                peakHours: [6, 10, 14, 20],
+                goals: [
+                    'Product MVP Launch',
+                    'Secure Funding Round',
+                    'Build Team',
+                    'Customer Acquisition',
+                    'Revenue Target $100k',
+                    'Strategic Partnerships'
+                ]
+            },
+            creative: {
+                categories: ['personal', 'work', 'learning', 'wellness'],
+                weights: [0.35, 0.35, 0.15, 0.15],
+                workHours: [11, 23],
+                peakHours: [11, 15, 20, 22],
+                goals: [
+                    'Complete Art Portfolio',
+                    'Gallery Exhibition',
+                    'Online Course Creation',
+                    'Creative Collaboration',
+                    'Social Media Growth',
+                    'Commission Pipeline'
+                ]
+            },
+            balanced: {
+                categories: ['work', 'personal', 'fitness', 'wellness'],
+                weights: [0.25, 0.25, 0.25, 0.25],
+                workHours: [9, 17],
+                peakHours: [10, 14, 18, 20],
+                goals: [
+                    'Work-Life Balance',
+                    'Health & Fitness Goals',
+                    'Family Time Quality',
+                    'Personal Development',
+                    'Financial Planning',
+                    'Hobby Mastery'
+                ]
+            }
+        };
+        
+        // Task templates by category
+        this.taskTemplates = {
+            work: [
+                { title: 'Team Standup', duration: 30, priority: 'high', recurring: 'weekdays' },
+                { title: 'Email Review', duration: 45, priority: 'medium', recurring: 'daily' },
+                { title: 'Project Planning', duration: 90, priority: 'high', recurring: null },
+                { title: 'Client Meeting', duration: 60, priority: 'high', recurring: null },
+                { title: 'Code Review', duration: 45, priority: 'medium', recurring: null },
+                { title: 'Documentation', duration: 60, priority: 'low', recurring: null },
+                { title: 'Sprint Planning', duration: 120, priority: 'high', recurring: 'weekly' },
+                { title: 'Performance Review', duration: 60, priority: 'medium', recurring: null },
+                { title: 'Budget Analysis', duration: 90, priority: 'medium', recurring: null },
+                { title: 'Report Writing', duration: 120, priority: 'low', recurring: null }
+            ],
+            learning: [
+                { title: 'Online Course', duration: 60, priority: 'medium', recurring: 'daily' },
+                { title: 'Book Reading', duration: 45, priority: 'low', recurring: null },
+                { title: 'Language Practice', duration: 30, priority: 'medium', recurring: 'daily' },
+                { title: 'Tutorial Video', duration: 45, priority: 'low', recurring: null },
+                { title: 'Coding Practice', duration: 60, priority: 'high', recurring: null },
+                { title: 'Research Paper', duration: 120, priority: 'high', recurring: null },
+                { title: 'Study Session', duration: 90, priority: 'high', recurring: null },
+                { title: 'Workshop Attendance', duration: 180, priority: 'medium', recurring: null },
+                { title: 'Skill Assessment', duration: 60, priority: 'medium', recurring: null },
+                { title: 'Peer Review', duration: 45, priority: 'medium', recurring: null }
+            ],
+            fitness: [
+                { title: 'Gym Workout', duration: 90, priority: 'medium', recurring: 'mwf' },
+                { title: 'Morning Run', duration: 45, priority: 'medium', recurring: 'daily' },
+                { title: 'Yoga Session', duration: 60, priority: 'low', recurring: 'tts' },
+                { title: 'Swimming', duration: 60, priority: 'medium', recurring: null },
+                { title: 'Cycling', duration: 90, priority: 'low', recurring: null },
+                { title: 'HIIT Training', duration: 30, priority: 'high', recurring: null },
+                { title: 'Sports Practice', duration: 120, priority: 'medium', recurring: null },
+                { title: 'Stretching', duration: 20, priority: 'low', recurring: 'daily' },
+                { title: 'Personal Training', duration: 60, priority: 'high', recurring: null },
+                { title: 'Fitness Assessment', duration: 45, priority: 'medium', recurring: null }
+            ],
+            personal: [
+                { title: 'Meal Prep', duration: 60, priority: 'medium', recurring: 'weekly' },
+                { title: 'Grocery Shopping', duration: 60, priority: 'medium', recurring: 'weekly' },
+                { title: 'House Cleaning', duration: 90, priority: 'low', recurring: 'weekly' },
+                { title: 'Laundry', duration: 45, priority: 'low', recurring: null },
+                { title: 'Social Event', duration: 180, priority: 'medium', recurring: null },
+                { title: 'Family Time', duration: 120, priority: 'high', recurring: null },
+                { title: 'Hobby Project', duration: 90, priority: 'low', recurring: null },
+                { title: 'Personal Finance', duration: 45, priority: 'high', recurring: null },
+                { title: 'Medical Appointment', duration: 60, priority: 'high', recurring: null },
+                { title: 'Entertainment', duration: 120, priority: 'low', recurring: null }
+            ],
+            wellness: [
+                { title: 'Meditation', duration: 20, priority: 'low', recurring: 'daily' },
+                { title: 'Journaling', duration: 15, priority: 'low', recurring: 'daily' },
+                { title: 'Therapy Session', duration: 60, priority: 'high', recurring: 'weekly' },
+                { title: 'Nature Walk', duration: 45, priority: 'low', recurring: null },
+                { title: 'Breathing Exercise', duration: 10, priority: 'low', recurring: 'daily' },
+                { title: 'Spa Treatment', duration: 90, priority: 'low', recurring: null },
+                { title: 'Sleep Hygiene', duration: 30, priority: 'medium', recurring: 'daily' },
+                { title: 'Digital Detox', duration: 120, priority: 'medium', recurring: null },
+                { title: 'Gratitude Practice', duration: 10, priority: 'low', recurring: 'daily' },
+                { title: 'Self-care Routine', duration: 45, priority: 'medium', recurring: null }
+            ]
+        };
+    }
+    
+    async initDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open('ProductivityDB', 1);
+            
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => {
+                this.db = request.result;
+                resolve(this.db);
+            };
+            
+            request.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                
+                // Create stores if they don't exist
+                if (!db.objectStoreNames.contains('tasks')) {
+                    db.createObjectStore('tasks', { keyPath: 'id', autoIncrement: true })
+                        .createIndex('date', 'date', { unique: false });
+                }
+                if (!db.objectStoreNames.contains('goals')) {
+                    db.createObjectStore('goals', { keyPath: 'id', autoIncrement: true });
+                }
+                if (!db.objectStoreNames.contains('productivity_scores')) {
+                    db.createObjectStore('productivity_scores', { keyPath: 'date' });
+                }
+            };
+        });
+    }
+    
+    async generateData() {
+        await this.initDB();
+        
+        const startDate = new Date(this.config.startDate);
+        const months = this.config.months;
+        const endDate = new Date(startDate);
+        endDate.setMonth(endDate.getMonth() + months);
+        
+        this.log('🎯 Generating goals...');
+        await this.generateGoals(startDate, endDate);
+        
+        this.log('📅 Generating tasks...');
+        await this.generateTasks(startDate, endDate);
+        
+        this.log('📊 Calculating productivity scores...');
+        await this.calculateProductivityScores(startDate, endDate);
+        
+        this.log('✅ Data generation complete!');
+        
+        return {
+            goals: this.goals.length,
+            tasks: this.tasks.length,
+            scores: this.scores.length,
+            dateRange: `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`
+        };
+    }
+    
+    async generateGoals(startDate, endDate) {
+        const persona = this.personas[this.config.persona];
+        const goalTemplates = persona.goals;
+        const numGoals = Math.min(this.config.numGoals, goalTemplates.length);
+        
+        const transaction = this.db.transaction(['goals'], 'readwrite');
+        const store = transaction.objectStore('goals');
+        
+        for (let i = 0; i < numGoals; i++) {
+            const deadline = new Date(startDate);
+            deadline.setDate(deadline.getDate() + Math.random() * 90 + 30); // 30-120 days
+            
+            const goal = {
+                name: goalTemplates[i],
+                description: `Strategic objective: ${goalTemplates[i].toLowerCase()}`,
+                category: persona.categories[Math.floor(Math.random() * 2)], // Primary categories
+                deadline: deadline.toISOString().split('T')[0],
+                metric: `Complete ${Math.floor(Math.random() * 20) + 10} related tasks`,
+                totalTasks: 0,
+                completedTasks: 0,
+                created: startDate.toISOString()
+            };
+            
+            store.add(goal);
+            this.goals.push(goal);
+        }
+        
+        await transaction.complete;
+    }
+    
+    async generateTasks(startDate, endDate) {
+        const persona = this.personas[this.config.persona];
+        const tasksPerDay = this.config.tasksPerDay;
+        const completionRate = this.config.completionRate / 100;
+        
+        const currentDate = new Date(startDate);
+        let taskCount = 0;
+        
+        while (currentDate <= endDate) {
+            const dayOfWeek = currentDate.getDay();
+            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+            
+            // Adjust tasks for weekends
+            const dayTasks = isWeekend ? 
+                Math.floor(tasksPerDay * 0.5) : 
+                Math.floor(tasksPerDay + (Math.random() - 0.5) * 4);
+            
+            for (let i = 0; i < dayTasks; i++) {
+                const task = await this.generateTask(currentDate, persona, completionRate);
+                this.tasks.push(task);
+                taskCount++;
+                
+                // Update progress
+                if (taskCount % 10 === 0) {
+                    this.updateProgress((taskCount / (tasksPerDay * 30 * this.config.months)) * 100);
+                }
+            }
+            
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        
+        // Batch save tasks
+        await this.saveTasks(this.tasks);
+    }
+    
+    async generateTask(date, persona, completionRate) {
+        // Select category based on persona weights
+        const category = this.selectWeightedCategory(persona);
+        const templates = this.taskTemplates[category];
+        const template = templates[Math.floor(Math.random() * templates.length)];
+        
+        // Determine time based on persona work hours
+        const [startHour, endHour] = persona.workHours;
+        // Peak hour bias: 60% near peaks, 40% uniform in window
+        let hour;
+        if (Math.random() < 0.6 && persona.peakHours && persona.peakHours.length) {
+            const peak = persona.peakHours[Math.floor(Math.random()*persona.peakHours.length)];
+            const spread = 2; // +/- 2 hours
+            hour = Math.max(startHour, Math.min(endHour-1, peak + Math.floor((Math.random()*2*spread) - spread)));
+        } else {
+            hour = startHour + Math.floor(Math.random() * Math.max(1,(endHour - startHour)));
+        }
+        const minute = Math.floor(Math.random() * 4) * 15; // 0, 15, 30, 45
+        
+        // Random variations
+        const durationVariation = 0.8 + Math.random() * 0.4; // 80-120% of template
+        const actualDuration = Math.floor(template.duration * durationVariation);
+        
+        // Link to goal (30% chance)
+        const goalId = Math.random() < 0.3 && this.goals.length > 0 ? 
+            this.goals[Math.floor(Math.random() * this.goals.length)].id : null;
+        // Priority adjustment: reduce overwhelming high bias by category/day
+        const day = date.getDay(); // 0-6
+        const priority = this.adjustPriority(template.priority, category, day);
+
+        return {
+            title: this.varyTaskTitle(template.title),
+            description: `${template.title} - ${category} task`,
+            priority: priority,
+            date: date.toISOString().split('T')[0],
+            time: `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`,
+            duration: actualDuration,
+            category: category,
+            goalId: goalId,
+            completed: Math.random() < completionRate,
+            recurring: template.recurring,
+            effort: 0,
+            quality: 0
+        };
+    }
+
+    adjustPriority(basePriority, category, day) {
+        // Baseline distribution targets
+        // work: H 35%, M 45%, L 20%; learning: H 25%, M 50%, L 25%;
+        // fitness: H 20%, M 55%, L 25%; personal: H 15%, M 45%, L 40%; wellness: H 10%, M 40%, L 50%
+        const targets = {
+            work:    { high: 0.35, medium: 0.45, low: 0.20 },
+            learning:{ high: 0.25, medium: 0.50, low: 0.25 },
+            fitness: { high: 0.20, medium: 0.55, low: 0.25 },
+            personal:{ high: 0.15, medium: 0.45, low: 0.40 },
+            wellness:{ high: 0.10, medium: 0.40, low: 0.50 }
+        };
+        const t = targets[category] || { high: 0.2, medium: 0.5, low: 0.3 };
+        // Day-of-week modifier: Mondays skew higher, Thursdays lower
+        const dayBoost = (day===1) ? 0.05 : (day===4 ? -0.05 : 0);
+        const h = Math.max(0.05, Math.min(0.8, t.high + dayBoost));
+        const l = Math.max(0.05, Math.min(0.7, t.low - dayBoost/2));
+        const m = Math.max(0.1, 1 - h - l);
+        const r = Math.random();
+        if (r < h) return 'high';
+        if (r < h + m) return 'medium';
+        return 'low';
+    }
+    
+    selectWeightedCategory(persona) {
+        const random = Math.random();
+        let cumulative = 0;
+        
+        for (let i = 0; i < persona.categories.length; i++) {
+            cumulative += persona.weights[i];
+            if (random < cumulative) {
+                return persona.categories[i];
+            }
+        }
+        
+        return persona.categories[persona.categories.length - 1];
+    }
+    
+    varyTaskTitle(baseTitle) {
+        const variations = {
+            'Team Standup': ['Daily Standup', 'Morning Sync', 'Team Check-in', 'Scrum Meeting'],
+            'Email Review': ['Inbox Zero', 'Email Processing', 'Message Review', 'Communication Check'],
+            'Gym Workout': ['Strength Training', 'Cardio Session', 'CrossFit', 'Gym Session'],
+            'Online Course': ['Video Lecture', 'Course Module', 'Online Learning', 'Training Video']
+        };
+        
+        if (variations[baseTitle]) {
+            return variations[baseTitle][Math.floor(Math.random() * variations[baseTitle].length)];
+        }
+        
+        return baseTitle;
+    }
+    
+    async saveTasks(tasks) {
+        const transaction = this.db.transaction(['tasks'], 'readwrite');
+        const store = transaction.objectStore('tasks');
+        
+        for (const task of tasks) {
+            store.add(task);
+        }
+        
+        await transaction.complete;
+    }
+    
+    async calculateProductivityScores(startDate, endDate) {
+        const currentDate = new Date(startDate);
+        
+        while (currentDate <= endDate) {
+            const dateStr = currentDate.toISOString().split('T')[0];
+            const dayTasks = this.tasks.filter(t => t.date === dateStr);
+            
+            if (dayTasks.length > 0) {
+                const score = this.calculateDayScore(dayTasks);
+                score.date = dateStr;
+                this.scores.push(score);
+            }
+            
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        
+        // Save scores
+        await this.saveScores(this.scores);
+    }
+    
+    calculateDayScore(tasks) {
+        const priorityScores = { high: 90, medium: 60, low: 30 };
+        const categoryScores = {
+            work: 85, learning: 80, fitness: 70,
+            personal: 60, wellness: 50
+        };
+        
+        let totalEffort = 0, totalDuration = 0, totalQuality = 0, totalGoal = 0;
+        let taskNames = [];
+        
+        tasks.forEach(task => {
+            // Effort score
+            const effort = priorityScores[task.priority] || 50;
+            
+            // Duration efficiency
+            const optimalDuration = 60;
+            const durationRatio = Math.min(task.duration / optimalDuration, 2);
+            const duration = task.completed ? 
+                100 * Math.exp(-0.5 * Math.abs(durationRatio - 1)) : 30;
+            
+            // Quality score
+            const quality = (categoryScores[task.category] || 50) * 
+                           (task.completed ? 1.0 : 0.3);
+            
+            // Goal alignment
+            const goal = task.goalId ? 80 : 30;
+            
+            totalEffort += effort;
+            totalDuration += duration;
+            totalQuality += quality;
+            totalGoal += goal;
+            
+            // Store task names for tooltip
+            taskNames.push(task.title);
+        });
+        
+        const count = tasks.length;
+        const avgEffort = totalEffort / count;
+        const avgDuration = totalDuration / count;
+        const avgQuality = totalQuality / count;
+        const avgGoal = totalGoal / count;
+        
+        // Composite score
+        const weights = { e: 0.25, d: 0.25, q: 0.25, g: 0.25 };
+        const composite = weights.e * avgEffort + weights.d * avgDuration + 
+                         weights.q * avgQuality + weights.g * avgGoal;
+        
+        // Pick most important tasks for display (highest priority ones)
+        const topTasks = tasks
+            .sort((a, b) => {
+                const priorityOrder = { high: 0, medium: 1, low: 2 };
+                return priorityOrder[a.priority] - priorityOrder[b.priority];
+            })
+            .slice(0, 3)
+            .map(t => t.title);
+        
+        return {
+            effort: avgEffort,
+            duration: avgDuration,
+            quality: avgQuality,
+            goal: avgGoal,
+            composite: composite,
+            taskCount: count,
+            taskNames: topTasks,
+            allTasks: taskNames
+        };
+    }
+    
+    async saveScores(scores) {
+        const transaction = this.db.transaction(['productivity_scores'], 'readwrite');
+        const store = transaction.objectStore('productivity_scores');
+        
+        for (const score of scores) {
+            store.put(score);
+        }
+        
+        await transaction.complete;
+    }
+    
+    async clearExistingData() {
+        const transaction = this.db.transaction(['tasks', 'goals', 'productivity_scores'], 'readwrite');
+        
+        await transaction.objectStore('tasks').clear();
+        await transaction.objectStore('goals').clear();
+        await transaction.objectStore('productivity_scores').clear();
+        
+        await transaction.complete;
+        this.log('🗑️ Existing data cleared');
+    }
+    
+    log(message) {
+        const logEl = document.getElementById('log');
+        if (logEl) {
+            logEl.innerHTML += message + '<br>';
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+        console.log(message);
+    }
+    
+    updateProgress(percent) {
+        const fillEl = document.getElementById('progressFill');
+        if (fillEl) {
+            fillEl.style.width = `${percent}%`;
+        }
+    }
+}
+
+// UI Functions
+async function generateData() {
+    const config = {
+        months: parseInt(document.getElementById('months').value),
+        startDate: document.getElementById('startDate').value,
+        tasksPerDay: parseInt(document.getElementById('tasksPerDay').value),
+        completionRate: parseInt(document.getElementById('completionRate').value),
+        numGoals: parseInt(document.getElementById('numGoals').value),
+        persona: document.getElementById('persona').value
+    };
+    
+    const generator = new ProductivityDataGenerator(config);
+    
+    // Show progress
+    document.getElementById('progress').classList.add('active');
+    document.getElementById('log').innerHTML = '';
+    document.getElementById('results').style.display = 'none';
+    
+    try {
+        await generator.initDB();
+        await generator.clearExistingData();
+        const results = await generator.generateData();
+        
+        // Show results
+        showResults(results);
+        
+        // Redirect after 3 seconds
+        setTimeout(() => {
+            if (confirm('Data generated successfully! View in the dashboard?')) {
+                window.location.href = 'dashboard.html';
+            }
+        }, 1000);
+        
+    } catch (error) {
+        console.error('Generation error:', error);
+        generator.log(`❌ Error: ${error.message}`);
+    }
+}
+
+function showResults(results) {
+    document.getElementById('results').style.display = 'block';
+    
+    const statsHtml = `
+        <div class="stat">
+            <div class="stat-value">${results.goals}</div>
+            <div class="stat-label">Goals Created</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value">${results.tasks}</div>
+            <div class="stat-label">Tasks Generated</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value">${results.scores}</div>
+            <div class="stat-label">Days Scored</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value">${Math.round(results.tasks / results.scores)}</div>
+            <div class="stat-label">Avg Tasks/Day</div>
+        </div>
+    `;
+    
+    document.getElementById('stats').innerHTML = statsHtml;
+}
+
+async function previewData() {
+    const config = {
+        months: 1,
+        startDate: document.getElementById('startDate').value,
+        tasksPerDay: 5,
+        completionRate: 75,
+        numGoals: 3,
+        persona: document.getElementById('persona').value
+    };
+    
+    const generator = new ProductivityDataGenerator(config);
+    const persona = generator.personas[config.persona];
+    
+    // Show sample tasks
+    const previewHtml = persona.goals.slice(0, 3).map(goal => `
+        <div class="preview-card">
+            <div class="preview-title">🎯 ${goal}</div>
+            <div class="preview-meta">Sample goal for ${config.persona}</div>
+        </div>
+    `).join('');
+    
+    document.getElementById('results').style.display = 'block';
+    document.getElementById('preview').innerHTML = previewHtml;
+}
+
+async function clearData() {
+    if (!confirm('This will delete all existing tasks, goals, and scores. Continue?')) {
+        return;
+    }
+    
+    try {
+        const generator = new ProductivityDataGenerator({});
+        await generator.initDB();
+        await generator.clearExistingData();
+        
+        alert('All data cleared successfully!');
+    } catch (error) {
+        console.error('Clear error:', error);
+        alert('Error clearing data: ' + error.message);
+    }
+}
+
+// Set default start date to beginning of current month
+document.addEventListener('DOMContentLoaded', () => {
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+    document.getElementById('startDate').value = firstDay.toISOString().split('T')[0];
+});
+    </script>
+</body>
+</html>

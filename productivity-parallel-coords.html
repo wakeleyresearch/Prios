@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Productivity Trajectory Analysis - Parallel Coordinates</title>
+    <link rel="stylesheet" href="theme.css" />
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #2a2a2a;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            color: #fff;
+        }
+        
+        #header {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+        
+        .subtitle {
+            margin-top: 8px;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        #main {
+            height: 800px;
+            margin: 20px;
+            border-radius: 8px;
+            background: #333;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        #controls {
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.8;
+        }
+        
+        select, input[type="range"], button {
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        select:hover, button:hover {
+            background: rgba(255,255,255,0.15);
+            border-color: rgba(255,255,255,0.3);
+        }
+        
+        input[type="range"] {
+            width: 200px;
+        }
+        
+        #stats-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border-radius: 8px;
+            min-width: 250px;
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .stat-label {
+            opacity: 0.7;
+            font-size: 13px;
+        }
+        
+        .stat-value {
+            font-weight: bold;
+            font-size: 15px;
+        }
+        
+        .performance-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-left: 8px;
+        }
+        
+        .high { background: #ff6b6b; }
+        .medium { background: #ffd93d; }
+    .low { background: #6bcf7f; }
+    .stats-title { margin-top: 0; margin-bottom: 16px; }
+    .planner-link { position: absolute; top: 20px; right: 20px; }
+    .planner-btn { padding: 10px 20px; background: rgba(255,255,255,0.2); color: white; text-decoration: none; border-radius: 5px; border: 1px solid rgba(255,255,255,0.3); display: inline-flex; align-items: center; gap: 8px; }
+    </style>
+</head>
+<body>
+    <div class="header-nav">
+        <div class="brand">Prios</div>
+        <div class="links">
+            <a href="index.html">Home</a>
+            <a href="dashboard.html">Dashboard</a>
+            <a href="todo-list.html">To-Do</a>
+            <a href="task-planner-enhanced.html">Planner</a>
+            <a href="productivity-parallel-coords.html" class="active">Analytics</a>
+        </div>
+    </div>
+    <div id="header">
+        <h1>Productivity Trajectory Analysis</h1>
+        <div class="subtitle">Composite Score: S = w_e·E + w_d·D + w_q·Q + w_g·G | Real-time Adaptive Weighting</div>
+        <div class="planner-link">
+            <a href="task-planner-enhanced.html" class="planner-btn">
+                <span>📅</span> Task Planner
+            </a>
+        </div>
+    </div>
+    
+    <div id="controls">
+        <div class="control-group">
+            <label for="timeRange">Time Range</label>
+            <select id="timeRange" aria-label="Time range" title="Time range">
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="quarter">This Quarter</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label for="optimizer">Weight Optimization</label>
+            <select id="optimizer" aria-label="Weight optimization" title="Weight optimization">
+                <option value="adam">Adam Optimizer</option>
+                <option value="pso">Particle Swarm</option>
+                <option value="bayesian">Bayesian</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label for="anomalyMethod">Anomaly Detection</label>
+            <select id="anomalyMethod" aria-label="Anomaly detection" title="Anomaly detection">
+                <option value="cusum">CUSUM-EWMA</option>
+                <option value="isolation">Isolation Forest</option>
+                <option value="ensemble">Ensemble</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label for="opacity">Line Opacity</label>
+            <input type="range" id="opacity" min="1" max="100" value="30" aria-label="Line opacity" title="Line opacity">
+        </div>
+        
+        <div class="control-group">
+            <label for="priorityFilter">Priority Filter</label>
+            <select id="priorityFilter" aria-label="Priority filter" title="Priority filter">
+                <option value="all">All</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label>&nbsp;</label>
+            <button onclick="updateVisualization()">Update View</button>
+        </div>
+        
+        <div class="control-group">
+            <label>&nbsp;</label>
+            <button onclick="detectPatterns()">Detect Patterns</button>
+        </div>
+    </div>
+    
+    <div id="main"></div>
+    
+    <div id="stats-panel">
+        <h3 class="stats-title">Performance Metrics</h3>
+        <div class="stat-item">
+            <span class="stat-label">Cronbach's α</span>
+            <span class="stat-value" id="cronbach">--</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Mean Score</span>
+            <span class="stat-value" id="meanScore">--</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Std Deviation</span>
+            <span class="stat-value" id="stdDev">--</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Trend</span>
+            <span class="stat-value" id="trend">--</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Anomalies</span>
+            <span class="stat-value" id="anomalies">--</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Current State</span>
+            <span class="stat-value" id="state">--</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Insights</span>
+            <span class="stat-value"></span>
+        </div>
+        <div id="insightsPanel" class="insights-panel"></div>
+    </div>
+    
+    <script src="productivity-viz.js"></script>
+    <script src="integration.js"></script>
+        <script>
+            // Apply default settings to controls
+            document.addEventListener('DOMContentLoaded', () => {
+                try {
+                    const s = JSON.parse(localStorage.getItem('appSettings') || '{}');
+                    if (s?.optimizer) {
+                        const opt = document.getElementById('optimizer');
+                        if (opt) opt.value = s.optimizer;
+                    }
+                    if (s?.anomaly) {
+                        const an = document.getElementById('anomalyMethod');
+                        if (an) an.value = s.anomaly;
+                    }
+                } catch {}
+            });
+        </script>
+</body>
+</html>
